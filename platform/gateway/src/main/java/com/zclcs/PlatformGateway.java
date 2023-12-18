@@ -1,9 +1,6 @@
 package com.zclcs;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.ThreadingModel;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -23,15 +20,6 @@ import static io.vertx.core.Future.await;
  */
 @Slf4j
 public class PlatformGateway extends AbstractVerticle {
-
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        var vertx = Vertx.vertx();
-        vertx.deployVerticle(PlatformGateway.class, new DeploymentOptions()
-                        .setThreadingModel(ThreadingModel.VIRTUAL_THREAD))
-                .toCompletionStage()
-                .toCompletableFuture()
-                .get();
-    }
 
     private ServiceDiscovery serviceDiscovery;
     private Record record;
@@ -59,7 +47,6 @@ public class PlatformGateway extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
-        log.info("Service unpublished id {}", record.getRegistration());
         await(serviceDiscovery.unpublish(record.getRegistration()));
         serviceDiscovery.close();
     }

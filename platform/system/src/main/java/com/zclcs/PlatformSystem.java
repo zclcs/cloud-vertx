@@ -57,6 +57,7 @@ public class PlatformSystem extends AbstractVerticle {
 
     @Override
     public void stop(Promise<Void> stopPromise) throws Exception {
+        log.info("Service published");
         await(serviceDiscovery.unpublish(record.getRegistration()));
         serviceDiscovery.close();
         super.stop(stopPromise);
