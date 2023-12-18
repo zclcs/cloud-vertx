@@ -10,6 +10,8 @@ import io.vertx.servicediscovery.ServiceDiscoveryOptions;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 import static io.vertx.core.Future.await;
 
 /**
@@ -18,48 +20,28 @@ import static io.vertx.core.Future.await;
 @Slf4j
 public class PlatformSystem extends AbstractVerticle {
 
-    public static void main(String[] args) {
-        var vertx = Vertx.vertx();
-        try {
-            vertx.deployVerticle(PlatformSystem.class, new DeploymentOptions()
-                            .setThreadingModel(ThreadingModel.VIRTUAL_THREAD))
-                    .toCompletionStage()
-                    .toCompletableFuture()
-                    .get();
-        } catch (Throwable e) {
-            log.error("start up error", e);
-        }
-    }
-
     private ServiceDiscovery serviceDiscovery;
     private Record record;
 
     @Override
     public void start() throws Exception {
-        serviceDiscovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions()
-                .setBackendConfiguration(
-                        new JsonObject()
-                                .put("connectionString", "redis://:123456@192.168.33.10:6379")
-                                .put("key", "records")
-                ));
+        serviceDiscovery = ServiceDiscovery.create(vertx);
         // Customize the configuration
         HttpServer httpServer = vertx.createHttpServer();
         httpServer
                 .requestHandler(req -> {
-                    Record await = await(serviceDiscovery.getRecord(r -> true));
+                    List<Record> await = await(serviceDiscovery.getRecords(r -> true));
                     req.response().end("Hello from Platform System + " + Json.encodePrettily(await));
                 });
-        await(httpServer.listen(6002));
-        record = HttpEndpoint.createRecord("platform-system", "localhost", 6002, "/system");
+        await(httpServer.listen(6001));
+        record = HttpEndpoint.createRecord("platform-system", "localhost", 6001, "/api");
         await(serviceDiscovery.publish(record));
         log.info("Service published");
     }
 
     @Override
-    public void stop(Promise<Void> stopPromise) throws Exception {
-        log.info("Service published");
+    public void stop() throws Exception {
         await(serviceDiscovery.unpublish(record.getRegistration()));
         serviceDiscovery.close();
-        super.stop(stopPromise);
     }
 }

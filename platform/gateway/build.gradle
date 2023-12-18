@@ -8,7 +8,7 @@ dependencies {
     implementation(project(":common:log4j2"))
     implementation("io.vertx:vertx-web")
     implementation("io.vertx:vertx-service-discovery")
-    implementation("io.vertx:vertx-service-discovery-backend-redis")
+//    implementation("io.vertx:vertx-service-discovery-backend-redis")
 }
 
 var launcherClassName = "com.zclcs.PlatformGateway"

@@ -26,12 +26,7 @@ public class PlatformGateway extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        serviceDiscovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions()
-                .setBackendConfiguration(
-                        new JsonObject()
-                                .put("connectionString", "redis://:123456@192.168.33.10:6379")
-                                .put("key", "records")
-                ));
+        serviceDiscovery = ServiceDiscovery.create(vertx);
         // Customize the configuration
         HttpServer httpServer = vertx.createHttpServer();
         httpServer
