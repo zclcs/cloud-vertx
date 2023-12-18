@@ -1,0 +1,26 @@
+plugins {
+    id "application"
+}
+
+dependencies {
+    implementation(project(":common:core"))
+    implementation(project(":common:config"))
+    implementation(project(":common:log4j2"))
+    implementation("io.vertx:vertx-web")
+    implementation("io.vertx:vertx-service-discovery")
+    implementation("io.vertx:vertx-service-discovery-backend-redis")
+}
+
+var launcherClassName = "com.zclcs.PlatformSystem"
+
+application {
+    mainClass = launcherClassName
+}
+
+shadowJar {
+    archiveClassifier = "fat"
+
+    archiveBaseName.set("platform-system")
+
+    mergeServiceFiles()
+}

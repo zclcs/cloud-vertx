@@ -1,0 +1,18 @@
+rootProject.name = 'cloud-vertx'
+
+include 'cloud-bom'
+
+include 'common'
+include 'common:core'
+include 'common:config'
+include 'common:log4j2'
+include 'common:redis'
+include 'common:rabbit'
+
+include 'cloud-lib'
+
+include 'platform'
+include 'platform:gateway'
+include 'platform:system'
+findProject(':platform:system')?.name = 'system'
+
