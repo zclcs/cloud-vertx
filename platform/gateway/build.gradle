@@ -6,11 +6,8 @@ dependencies {
     implementation(project(":common:core"))
     implementation(project(":common:config"))
     implementation(project(":common:log4j2"))
-    implementation("io.vertx:vertx-web")
-    implementation("io.vertx:vertx-service-discovery")
-//    implementation("io.vertx:vertx-service-discovery-backend-redis")
-//    implementation("io.vertx:vertx-hazelcast")
-//    implementation("io.vertx:vertx-tcp-eventbus-bridge")
+    implementation(project(":common:discovery"))
+    implementation(project(":common:web"))
 }
 
 var launcherClassName = "com.zclcs.PlatformGatewayVerticle"

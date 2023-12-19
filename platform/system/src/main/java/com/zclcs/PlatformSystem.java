@@ -7,6 +7,7 @@ import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.Json;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceDiscoveryOptions;
 import io.vertx.servicediscovery.types.HttpEndpoint;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class PlatformSystem extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        serviceDiscovery = ServiceDiscovery.create(vertx);
+        serviceDiscovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(config()));
         // Customize the configuration
         HttpServer httpServer = vertx.createHttpServer();
         httpServer
