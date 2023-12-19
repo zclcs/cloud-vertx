@@ -15,7 +15,5 @@ include 'platform'
 include 'platform:gateway'
 include 'platform:system'
 
-include 'register'
-
 include 'common:discovery'
 

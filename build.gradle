@@ -18,7 +18,7 @@ plugins {
 ext {
     javaVersion = JavaVersion.VERSION_21
     bom = Set.of(project(":cloud-bom"), project(":platform"), project(":common"), project(":cloud-lib"))
-    applicationPackage = Set.of(project(":platform:gateway"), project(":platform:system"), project(":register"))
+    applicationPackage = Set.of(project(":platform:gateway"), project(":platform:system"))
     commons = (subprojects - bom)
 }
 
