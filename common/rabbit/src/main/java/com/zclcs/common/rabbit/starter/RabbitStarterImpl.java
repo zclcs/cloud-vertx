@@ -1,5 +1,6 @@
 package com.zclcs.common.rabbit.starter;
 
+import com.zclcs.common.core.service.StarterService;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
