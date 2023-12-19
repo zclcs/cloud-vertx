@@ -8,15 +8,16 @@ import io.vertx.core.ThreadingModel;
 /**
  * @author zclcs
  */
-public class PlatformSystemVerticle extends AbstractVerticle {
+public class RegisterVerticle extends AbstractVerticle {
 
     public static void main(String[] args) {
-        Launcher.executeCommand("run", PlatformSystemVerticle.class.getName());
+        Launcher.executeCommand("run", RegisterVerticle.class.getName());
     }
 
     @Override
     public void start() throws Exception {
-        vertx.deployVerticle(PlatformSystem.class, new DeploymentOptions()
+        vertx.deployVerticle(Register.class, new DeploymentOptions()
                 .setThreadingModel(ThreadingModel.VIRTUAL_THREAD));
     }
+
 }

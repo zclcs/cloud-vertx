@@ -14,5 +14,8 @@ include 'cloud-lib'
 include 'platform'
 include 'platform:gateway'
 include 'platform:system'
-findProject(':platform:system')?.name = 'system'
+
+include 'register'
+
+include 'common:discovery'
 

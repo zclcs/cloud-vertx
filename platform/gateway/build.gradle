@@ -9,9 +9,11 @@ dependencies {
     implementation("io.vertx:vertx-web")
     implementation("io.vertx:vertx-service-discovery")
 //    implementation("io.vertx:vertx-service-discovery-backend-redis")
+//    implementation("io.vertx:vertx-hazelcast")
+//    implementation("io.vertx:vertx-tcp-eventbus-bridge")
 }
 
-var launcherClassName = "com.zclcs.PlatformGateway"
+var launcherClassName = "com.zclcs.PlatformGatewayVerticle"
 
 application {
     mainClass = launcherClassName

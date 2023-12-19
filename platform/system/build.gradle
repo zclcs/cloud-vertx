@@ -9,6 +9,7 @@ dependencies {
     implementation("io.vertx:vertx-web")
     implementation("io.vertx:vertx-service-discovery")
 //    implementation("io.vertx:vertx-service-discovery-backend-redis")
+//    implementation("io.vertx:vertx-hazelcast")
 }
 
 var launcherClassName = "com.zclcs.PlatformSystem"

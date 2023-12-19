@@ -1,18 +1,15 @@
 package com.zclcs.common.rabbit.starter;
 
-import com.zclcs.common.core.service.StarterService;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQOptions;
-import lombok.extern.slf4j.Slf4j;
 
 import static io.vertx.core.Future.await;
 
 /**
  * @author zclcs
  */
-@Slf4j
 public class RabbitStarterImpl implements StarterService {
 
     private final Vertx vertx;
@@ -46,7 +43,6 @@ public class RabbitStarterImpl implements StarterService {
         rabbit = RabbitMQClient.create(vertx, options);
         createExchange(config);
         await(rabbit.start());
-        log.info("RabbitMQ connected");
     }
 
     private void createExchange(JsonObject config) {
@@ -59,7 +55,6 @@ public class RabbitStarterImpl implements StarterService {
                     .compose(v -> rabbit.queueDeclare(queueName, true, false, false))
                     .compose(v -> rabbit.queueBind(queueName, exchangeName, routingKey))
                     .onComplete(promise);
-            ;
         });
     }
 }

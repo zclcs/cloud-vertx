@@ -1,25 +1,24 @@
 package com.zclcs;
 
-import io.vertx.core.*;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
-import io.vertx.servicediscovery.ServiceDiscoveryOptions;
 import io.vertx.servicediscovery.types.HttpEndpoint;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import static io.vertx.core.Future.await;
 
 /**
  * @author zclcs
  */
-@Slf4j
 public class PlatformGateway extends AbstractVerticle {
+
+    private final Logger log = LoggerFactory.getLogger(PlatformGateway.class);
 
     private ServiceDiscovery serviceDiscovery;
     private Record record;
@@ -31,7 +30,7 @@ public class PlatformGateway extends AbstractVerticle {
         HttpServer httpServer = vertx.createHttpServer();
         httpServer
                 .requestHandler(req -> {
-                    List<Record> await = await(serviceDiscovery.getRecords(r -> true));
+                    List<Record> await = await(serviceDiscovery.getRecords(r -> r.getType().equals(HttpEndpoint.TYPE)));
                     req.response().end("Hello from Platform Gateway + " + Json.encodePrettily(await));
                 });
         await(httpServer.listen(6001));

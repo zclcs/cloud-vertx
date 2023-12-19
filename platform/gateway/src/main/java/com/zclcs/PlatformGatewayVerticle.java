@@ -1,24 +1,13 @@
 package com.zclcs;
 
-import io.vertx.core.*;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.Record;
-import io.vertx.servicediscovery.ServiceDiscovery;
-import io.vertx.servicediscovery.ServiceDiscoveryOptions;
-import io.vertx.servicediscovery.types.HttpEndpoint;
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import static io.vertx.core.Future.await;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Launcher;
+import io.vertx.core.ThreadingModel;
 
 /**
  * @author zclcs
  */
-@Slf4j
 public class PlatformGatewayVerticle extends AbstractVerticle {
 
     public static void main(String[] args) {

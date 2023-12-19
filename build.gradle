@@ -5,7 +5,6 @@ buildscript {
         log4j2Version = "2.22.0"
         slf4jVersion = "2.0.9"
         disruptorVersion = "3.4.2"
-        lombokVersion = "1.18.30"
         caffeineVersion = "3.1.5"
         jacksonVersion = "2.15.3"
     }
@@ -19,7 +18,7 @@ plugins {
 ext {
     javaVersion = JavaVersion.VERSION_21
     bom = Set.of(project(":cloud-bom"), project(":platform"), project(":common"), project(":cloud-lib"))
-    applicationPackage = Set.of(project(":platform:gateway"), project(":platform:system"))
+    applicationPackage = Set.of(project(":platform:gateway"), project(":platform:system"), project(":register"))
     commons = (subprojects - bom)
 }
 
@@ -65,8 +64,6 @@ configure(commons) {
         // import BOM.
         management platform("io.vertx:vertx-stack-depchain:$vertxVersion")
         management platform(project(":cloud-bom"))
-        compileOnly "org.projectlombok:lombok"
-        annotationProcessor "org.projectlombok:lombok"
     }
 
     compileJava.options.compilerArgs.add '-parameters'
