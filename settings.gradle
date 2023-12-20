@@ -8,14 +8,13 @@ include 'common:config'
 include 'common:log4j2'
 include 'common:redis'
 include 'common:rabbit'
+include 'common:web'
 
 include 'cloud-lib'
+include 'cloud-lib:cloud-core'
+include 'cloud-lib:discovery'
 
 include 'platform'
 include 'platform:gateway'
 include 'platform:system'
-
-include 'common:discovery'
-include 'common:web'
-findProject(':common:web')?.name = 'web'
 

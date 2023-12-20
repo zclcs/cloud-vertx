@@ -6,10 +6,8 @@ dependencies {
     implementation(project(":common:core"))
     implementation(project(":common:config"))
     implementation(project(":common:log4j2"))
-    implementation("io.vertx:vertx-web")
-    implementation("io.vertx:vertx-service-discovery")
-//    implementation("io.vertx:vertx-service-discovery-backend-redis")
-//    implementation("io.vertx:vertx-hazelcast")
+    implementation(project(":common:web"))
+    implementation(project(":cloud-lib:discovery"))
 }
 
 var launcherClassName = "com.zclcs.PlatformSystem"

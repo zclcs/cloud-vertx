@@ -19,6 +19,7 @@ public class RedisStarterImpl implements StarterService {
 
     private final Vertx vertx;
     private final JsonObject config;
+    private String connectionUrl;
 
     public RedisStarterImpl(Vertx vertx, JsonObject config) {
         this.vertx = vertx;
@@ -36,7 +37,6 @@ public class RedisStarterImpl implements StarterService {
         String redisPort = config.getString("REDIS_PORT", "6379");
         String redisDatabase = config.getString("REDIS_DATABASE", "0");
         String redisPassword = config.getString("REDIS_PASSWORD", "");
-        String connectionUrl;
         if (StringsUtil.isBlank(redisPassword)) {
             connectionUrl = String.format("redis://%s:%s/%s", redisHost, redisPort, redisDatabase);
         } else {
@@ -48,5 +48,9 @@ public class RedisStarterImpl implements StarterService {
         Redis client = Redis.createClient(vertx, options);
         await(client.connect().timeout(1, TimeUnit.SECONDS));
         return RedisAPI.api(client);
+    }
+
+    public String getConnectionUrl() {
+        return connectionUrl;
     }
 }

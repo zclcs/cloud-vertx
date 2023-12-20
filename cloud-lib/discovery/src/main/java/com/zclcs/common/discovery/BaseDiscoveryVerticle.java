@@ -1,7 +1,11 @@
 package com.zclcs.common.discovery;
 
+import com.zclcs.common.redis.starter.RedisStarterImpl;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.*;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.impl.VertxInternal;
@@ -35,13 +39,27 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
     protected CircuitBreaker circuitBreaker;
     protected Set<Record> registeredRecords = new ConcurrentHashSet<>();
     protected VertxInternal vertxInternal;
+    protected RedisStarterImpl redisStarter;
+    protected JsonObject config;
 
     @Override
     public void start() throws Exception {
         vertxInternal = (VertxInternal) vertx;
         // init service discovery instance
-        JsonObject config = config();
-        discovery = ServiceDiscovery.create(vertx, new ServiceDiscoveryOptions().setBackendConfiguration(new JsonObject().put("backend-name", config.getString("DISCOVERY_BACKEND_NAME", CloudBackendService.class.getName()))));
+        ConfigStoreOptions store = new ConfigStoreOptions()
+                .setType("env");
+        ConfigRetriever retriever = ConfigRetriever.create(vertx,
+                new ConfigRetrieverOptions().addStore(store));
+        config = await(retriever.getConfig());
+        redisStarter = new RedisStarterImpl(vertx, config);
+        redisStarter.setUp();
+        discovery = ServiceDiscovery
+                .create(vertx, new ServiceDiscoveryOptions()
+                        .setBackendConfiguration(new JsonObject()
+                                .put("backend-name", config.getString("DISCOVERY_BACKEND_NAME", "com.zclcs.common.discovery.CloudBackendService"))
+                                .put("connectionString", redisStarter.getConnectionUrl())
+                                .put("key", "records"))
+                );
 
         // init circuit breaker instance
         String circuitBreakerName = config.getString("CIRCUIT_BREAKER_NAME", "circuit-breaker");
@@ -57,12 +75,15 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
         );
     }
 
-    protected Future<Record> publishHttpEndpoint(String name, String host, int port) {
+    protected Future<Record> publishHttpEndpoint(String name, String host, int port, String forward) {
         Promise<Record> promise = vertxInternal.promise();
         Record record = HttpEndpoint.createRecord(name, host, port, "/",
-                new JsonObject().put("api.name", config().getString("api.name", ""))
+                new JsonObject().put("api.name", forward)
         );
-        return publish(record, promise);
+        return publish(record, promise).compose(rc -> {
+            registeredRecords.add(rc);
+            return promise.future();
+        });
     }
 
     protected Future<Record> publishMessageSource(String name, String address) {
@@ -103,6 +124,7 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
+        System.out.println("Stopping discovery service...");
         for (Record registeredRecord : registeredRecords) {
             await(discovery.unpublish(registeredRecord.getRegistration()));
         }

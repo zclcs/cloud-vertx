@@ -1,5 +1,7 @@
 dependencies {
-    api("io.vertx:vertx-core")
+    api(project(":common:core"))
+    api(project(":common:config"))
+    api(project(":common:redis"))
     api("io.vertx:vertx-service-discovery")
     api("io.vertx:vertx-circuit-breaker")
 }

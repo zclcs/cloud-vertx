@@ -2,6 +2,8 @@
   <configuration default="false" name="PlatformSystemVerticle" type="Application" factoryName="Application">
     <envs>
       <env name="VERTX-SERVICE-DISCOVERY-BACKEND-LOCAL" value="false" />
+      <env name="REDIS_HOST" value="192.168.33.10" />
+      <env name="REDIS_PASSWORD" value="123456" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="io.vertx.core.Launcher" />
     <module name="cloud-vertx.platform.system.main" />

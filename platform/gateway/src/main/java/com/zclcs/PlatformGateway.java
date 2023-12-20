@@ -1,14 +1,16 @@
 package com.zclcs;
 
 import com.zclcs.common.discovery.BaseDiscoveryVerticle;
-import com.zclcs.common.web.starter.WebStartImpl;
+import com.zclcs.common.web.starter.WebStarterImpl;
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
@@ -32,7 +34,7 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
 
     private static final int DEFAULT_PORT = 8787;
     private static final Logger log = LoggerFactory.getLogger(PlatformGateway.class);
-    private WebStartImpl webStart;
+    private WebStarterImpl webStart;
 
     @Override
     public void start() throws Exception {
@@ -42,8 +44,8 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
         ConfigRetriever retriever = ConfigRetriever.create(vertx,
                 new ConfigRetrieverOptions().addStore(store));
         JsonObject config = await(retriever.getConfig());
-        String host = config.getString("api.gateway.http.address", "localhost");
-        int port = config.getInteger("api.gateway.http.port", DEFAULT_PORT);
+        String host = config.getString("API_GATEWAY_HTTP_ADDRESS", "localhost");
+        int port = config.getInteger("API_GATEWAY_HTTP_PORT", DEFAULT_PORT);
 
         Router router = Router.router(vertx);
 
@@ -53,7 +55,7 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
         // api dispatcher
         router.route("/api/*").handler(this::dispatchRequests);
 
-        webStart = new WebStartImpl(vertx, router, host, port);
+        webStart = new WebStarterImpl(vertx, router, host, port);
         webStart.setUp();
         log.info("API Gateway is running on port " + port);
     }
@@ -75,10 +77,10 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
                         future.complete();
                         return;
                     }
-                    String prefix = (path.substring(initialOffset)
+                    String prefix = "/" + (path.substring(initialOffset)
                             .split("/"))[0];
                     // generate new relative path
-                    String newPath = path.substring(initialOffset + prefix.length());
+                    String newPath = "/" + path.substring(initialOffset + prefix.length());
                     // get one relevant HTTP client, may not exist
                     Optional<Record> client = recordList.stream()
                             .filter(record -> record.getMetadata().getString("api.name") != null)
@@ -107,25 +109,9 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
      * @param path    relative path
      * @param client  relevant HTTP client
      */
-    private void doDispatch(RoutingContext context, String path, HttpClient client, Future<Object> cbFuture) {
-        HttpClientRequest toReq = client
-                .request(context.request().method(), path, response -> {
-                    response.bodyHandler(body -> {
-                        if (response.statusCode() >= 500) { // api endpoint server error, circuit breaker should fail
-                            cbFuture.fail(response.statusCode() + ": " + body.toString());
-                        } else {
-                            HttpServerResponse toRsp = context.response()
-                                    .setStatusCode(response.statusCode());
-                            response.headers().forEach(header -> {
-                                toRsp.putHeader(header.getKey(), header.getValue());
-                            });
-                            // send response
-                            toRsp.end(body);
-                            cbFuture.complete();
-                        }
-                        ServiceDiscovery.releaseServiceObject(discovery, client);
-                    });
-                });
+    private <T> void doDispatch(RoutingContext context, String path, HttpClient client, Promise<T> cbFuture) {
+        HttpClientRequest toReq = await(client
+                .request(context.request().method(), path));
         // set headers
         context.request().headers().forEach(header -> {
             toReq.putHeader(header.getKey(), header.getValue());
@@ -134,11 +120,27 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
             toReq.putHeader("user-principal", context.user().principal().encode());
         }
         // send request
-        if (context.getBody() == null) {
+        if (context.body().isEmpty()) {
             toReq.end();
         } else {
-            toReq.end(context.getBody());
+            toReq.end(context.body().buffer());
         }
+        HttpClientResponse response = await(toReq.send());
+        Buffer body = await(response.body());
+        // api endpoint server error, circuit breaker should fail
+        if (response.statusCode() >= 500) {
+            cbFuture.fail(response.statusCode() + ": " + body.toString());
+        } else {
+            HttpServerResponse toRsp = context.response()
+                    .setStatusCode(response.statusCode());
+            response.headers().forEach(header -> {
+                toRsp.putHeader(header.getKey(), header.getValue());
+            });
+            // send response
+            toRsp.end(body);
+            cbFuture.complete();
+        }
+        ServiceDiscovery.releaseServiceObject(discovery, client);
     }
 
     private void apiVersion(RoutingContext context) {
