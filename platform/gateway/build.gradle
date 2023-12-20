@@ -6,8 +6,8 @@ dependencies {
     implementation(project(":common:core"))
     implementation(project(":common:config"))
     implementation(project(":common:log4j2"))
-    implementation(project(":common:discovery"))
     implementation(project(":common:web"))
+    implementation(project(":common:discovery"))
 }
 
 var launcherClassName = "com.zclcs.PlatformGatewayVerticle"
