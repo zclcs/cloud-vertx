@@ -16,4 +16,6 @@ include 'platform:gateway'
 include 'platform:system'
 
 include 'common:discovery'
+include 'common:web'
+findProject(':common:web')?.name = 'web'
 

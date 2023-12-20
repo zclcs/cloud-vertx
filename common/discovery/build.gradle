@@ -1,6 +1,5 @@
 dependencies {
     api("io.vertx:vertx-core")
-    api("io.vertx:vertx-redis-client")
-    api("com.github.ben-manes.caffeine:caffeine")
     api("io.vertx:vertx-service-discovery")
+    api("io.vertx:vertx-circuit-breaker")
 }
