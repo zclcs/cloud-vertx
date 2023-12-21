@@ -10,7 +10,7 @@ dependencies {
     implementation(project(":cloud-lib:discovery"))
 }
 
-var launcherClassName = "com.zclcs.PlatformSystem"
+var launcherClassName = "com.zclcs.PlatformSystemVerticle"
 
 application {
     mainClass = launcherClassName

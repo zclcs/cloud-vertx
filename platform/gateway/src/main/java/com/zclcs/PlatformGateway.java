@@ -1,28 +1,30 @@
 package com.zclcs;
 
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
+import com.zclcs.bean.Res;
 import com.zclcs.common.discovery.BaseDiscoveryVerticle;
 import com.zclcs.common.web.starter.WebStarterImpl;
-import io.vertx.config.ConfigRetriever;
-import io.vertx.config.ConfigRetrieverOptions;
-import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
+import io.vertx.servicediscovery.ServiceReference;
 import io.vertx.servicediscovery.types.HttpEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static io.vertx.core.Future.await;
@@ -35,71 +37,82 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
     private static final int DEFAULT_PORT = 8787;
     private static final Logger log = LoggerFactory.getLogger(PlatformGateway.class);
     private WebStarterImpl webStart;
+    private AsyncLoadingCache<String, List<Record>> recordsCache;
 
     @Override
     public void start() throws Exception {
         super.start();
-        ConfigStoreOptions store = new ConfigStoreOptions()
-                .setType("env");
-        ConfigRetriever retriever = ConfigRetriever.create(vertx,
-                new ConfigRetrieverOptions().addStore(store));
-        JsonObject config = await(retriever.getConfig());
-        String host = config.getString("API_GATEWAY_HTTP_ADDRESS", "localhost");
-        int port = config.getInteger("API_GATEWAY_HTTP_PORT", DEFAULT_PORT);
+        String host = config.getString("PLATFORM_GATEWAY_HTTP_ADDRESS", "0.0.0.0");
+        int port = config.getInteger("PLATFORM_GATEWAY_HTTP_PORT", DEFAULT_PORT);
 
         Router router = Router.router(vertx);
-
-        // body handler
-        router.route().handler(BodyHandler.create());
+        router.route().handler(BodyHandler.create().setBodyLimit(1024 * 1024 * 10));
 
         // api dispatcher
         router.route("/api/*").handler(this::dispatchRequests);
 
         webStart = new WebStarterImpl(vertx, router, host, port);
         webStart.setUp();
-        log.info("API Gateway is running on port " + port);
+        log.info("http server started on " + host + ":" + port);
+        recordsCache = redisStarter.create(vertx.getOrCreateContext(), Duration.ofSeconds(30), this::getAllEndpoints);
     }
 
     private void dispatchRequests(RoutingContext context) {
-        // length of `/api/`
+        // 转发路径/api/的长度
         int initialOffset = 5;
-        // run with circuit breaker in order to deal with failure
-        vertxInternal.promise();
-        circuitBreaker.execute(future -> {
-            getAllEndpoints().onComplete(ar -> {
-                if (ar.succeeded()) {
-                    List<Record> recordList = ar.result();
-                    // get relative path and retrieve prefix to dispatch client
-                    String path = context.request().uri();
+        String path = context.request().uri();
 
-                    if (path.length() <= initialOffset) {
-                        webStart.notFound(context);
-                        future.complete();
-                        return;
-                    }
-                    String prefix = "/" + (path.substring(initialOffset)
-                            .split("/"))[0];
-                    // generate new relative path
-                    String newPath = "/" + path.substring(initialOffset + prefix.length());
+        if (path.length() <= initialOffset) {
+            resp(context, Res.notFound());
+            return;
+        }
+        // 要转发的服务路径
+        String prefix = (path.substring(initialOffset)
+                .split("/"))[0];
+        // 转发的相对路径
+        String newPath = path.substring(initialOffset + prefix.length());
+        String finalPrefix = "/" + prefix;
+        String finalNewPath = "/" + newPath;
+        Res res = await(circuitBreaker.executeWithFallback(
+                promise -> {
+
+                    List<Record> records = await(Future.fromCompletionStage(recordsCache.get("all")));
                     // get one relevant HTTP client, may not exist
-                    Optional<Record> client = recordList.stream()
+                    Optional<Record> client = records.stream()
                             .filter(record -> record.getMetadata().getString("api.name") != null)
-                            .filter(record -> record.getMetadata().getString("api.name").equals(prefix))
-                            .findAny(); // simple load balance
+                            .filter(record -> record.getMetadata().getString("api.name").equals(finalPrefix))
+                            .findAny();
 
                     if (client.isPresent()) {
-                        doDispatch(context, newPath, discovery.getReference(client.get()).get(), future);
+                        ServiceReference reference = discovery.getReference(client.get());
+                        HttpClient forward = reference.getAs(HttpClient.class);
+                        // send request to relevant HTTP client
+                        forward.request(context.request().method(), finalNewPath)
+                                .compose(req -> {
+                                    
+                                    context.request().headers().forEach(req::putHeader);
+                                    MultiMap headers = context.request().headers();
+                                    for (Map.Entry<String, String> header : headers) {
+                                        req.putHeader(header.getKey(), header.getValue());
+                                    }
+                                    if (context.body().isEmpty()) {
+                                        req.end();
+                                    } else {
+                                        req.end(context.body().buffer());
+                                    }
+                                    return req.send();
+                                })
+                                .compose(resp -> Future.succeededFuture(new Res(resp))).onComplete(promise);
+                        ServiceDiscovery.releaseServiceObject(discovery, client);
                     } else {
-                        webStart.notFound(context);
-                        future.complete();
+                        Future.succeededFuture(Res.serviceUnavailable()).onComplete(promise);
                     }
-                } else {
-                    future.fail(ar.cause());
-                }
-            });
-        }).onFailure(ar -> {
-            webStart.badGateway(context);
-        });
+                }, v -> {
+                    log.error("Circuit breaker is open", v);
+                    // Executed when the circuit is opened
+                    return Res.serviceUnavailable();
+                }));
+        resp(context, res);
     }
 
     /**
@@ -138,14 +151,9 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
             });
             // send response
             toRsp.end(body);
-            cbFuture.complete();
         }
         ServiceDiscovery.releaseServiceObject(discovery, client);
-    }
-
-    private void apiVersion(RoutingContext context) {
-        context.response()
-                .end(new JsonObject().put("version", "v1").encodePrettily());
+        cbFuture.complete();
     }
 
     /**
@@ -153,21 +161,19 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
      *
      * @return async result
      */
-    private Future<List<Record>> getAllEndpoints() {
+    private Future<List<Record>> getAllEndpoints(String key) {
         Promise<List<Record>> promise = vertxInternal.promise();
         discovery.getRecords(record -> record.getType().equals(HttpEndpoint.TYPE), promise);
+        log.info("Get all endpoints from service discovery");
         return promise.future();
     }
 
-    private void logoutHandler(RoutingContext context) {
-        context.clearUser();
-        context.session().destroy();
-        context.response().setStatusCode(204).end();
-    }
-
-    private String buildHostURI() {
-        int port = config().getInteger("api.gateway.http.port", DEFAULT_PORT);
-        final String host = config().getString("api.gateway.http.address.external", "localhost");
-        return String.format("https://%s:%d", host, port);
+    public void resp(RoutingContext routingContext, Res res) {
+        HttpServerResponse response = routingContext.response();
+        response.setStatusCode(res.getStatusCode());
+        res.getHead().forEach(header -> {
+            response.putHeader(header.getKey(), header.getValue());
+        });
+        routingContext.end(res.getBody());
     }
 }

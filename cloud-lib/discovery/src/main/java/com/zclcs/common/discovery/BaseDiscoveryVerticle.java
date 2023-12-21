@@ -45,7 +45,6 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         vertxInternal = (VertxInternal) vertx;
-        // init service discovery instance
         ConfigStoreOptions store = new ConfigStoreOptions()
                 .setType("env");
         ConfigRetriever retriever = ConfigRetriever.create(vertx,
@@ -55,24 +54,21 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
         redisStarter.setUp();
         discovery = ServiceDiscovery
                 .create(vertx, new ServiceDiscoveryOptions()
-                        .setBackendConfiguration(new JsonObject()
-                                .put("backend-name", config.getString("DISCOVERY_BACKEND_NAME", "com.zclcs.common.discovery.CloudBackendService"))
-                                .put("connectionString", redisStarter.getConnectionUrl())
-                                .put("key", "records"))
+                        .setBackendConfiguration(config
+                                .put("backend-name", config.getString("DISCOVERY_BACKEND_NAME", "com.zclcs.common.discovery.CloudBackendService")))
                 );
 
         // init circuit breaker instance
         String circuitBreakerName = config.getString("CIRCUIT_BREAKER_NAME", "circuit-breaker");
-        Integer circuitBreakerMaxFailures = config.getInteger("CIRCUIT_BREAKER_MAX_FAILURES", 5);
-        Long circuitBreakerTimeout = config.getLong("CIRCUIT_BREAKER_TIMEOUT", 10000L);
+        Integer circuitBreakerMaxFailures = config.getInteger("CIRCUIT_BREAKER_MAX_FAILURES", 1);
+        Long circuitBreakerTimeout = config.getLong("CIRCUIT_BREAKER_TIMEOUT", 2000L);
         Long circuitBreakerResetTimeout = config.getLong("CIRCUIT_BREAKER_RESET_TIMEOUT", 30000L);
         circuitBreaker = CircuitBreaker.create(circuitBreakerName, vertx,
                 new CircuitBreakerOptions()
                         .setMaxFailures(circuitBreakerMaxFailures)
                         .setTimeout(circuitBreakerTimeout)
                         .setFallbackOnFailure(true)
-                        .setResetTimeout(circuitBreakerResetTimeout)
-        );
+                        .setResetTimeout(circuitBreakerResetTimeout));
     }
 
     protected Future<Record> publishHttpEndpoint(String name, String host, int port, String forward) {

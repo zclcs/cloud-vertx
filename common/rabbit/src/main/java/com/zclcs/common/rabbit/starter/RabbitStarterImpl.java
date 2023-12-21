@@ -47,7 +47,7 @@ public class RabbitStarterImpl implements StarterService {
     }
 
     private void createExchange(JsonObject config) {
-        String nacosNamespace = config.getString("NACOS_NAMESPACE", "dev");
+        String nacosNamespace = config.getString("NAMESPACE", "dev");
         String exchangeName = nacosNamespace + ".test.exchange";
         String queueName = nacosNamespace + ".test.queue";
         String routingKey = nacosNamespace + ".test.routingKey";

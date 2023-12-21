@@ -1,24 +1,21 @@
 package com.zclcs.common.discovery;
 
+import com.zclcs.common.redis.starter.RedisStarterImpl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.redis.client.Redis;
-import io.vertx.redis.client.RedisOptions;
+import io.vertx.redis.client.RedisAPI;
 import io.vertx.redis.client.Response;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.spi.ServiceDiscoveryBackend;
 
-import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static io.vertx.redis.client.Command.*;
-import static io.vertx.redis.client.Request.cmd;
 
 /**
  * An implementation of the discovery backend based on Redis.
@@ -27,15 +24,15 @@ import static io.vertx.redis.client.Request.cmd;
  */
 public class CloudBackendService implements ServiceDiscoveryBackend {
 
-    private Redis redis;
     private String key;
-    private Duration duration;
+    private RedisAPI redis;
 
     @Override
-
     public void init(Vertx vertx, JsonObject configuration) {
         key = configuration.getString("key", "records");
-        redis = Redis.createClient(vertx, new RedisOptions(configuration));
+        RedisStarterImpl redisStarter = new RedisStarterImpl(vertx, configuration);
+        redisStarter.setUp();
+        redis = redisStarter.getRedis();
     }
 
     @Override
@@ -47,7 +44,7 @@ public class CloudBackendService implements ServiceDiscoveryBackend {
         String uuid = UUID.randomUUID().toString();
         record.setRegistration(uuid);
 
-        redis.send(cmd(HSET).arg(key).arg(uuid).arg(record.toJson().encode())).onComplete(ar -> {
+        redis.hset(Arrays.asList(key, uuid, record.toJson().encode())).onComplete(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture(record));
             } else {
@@ -65,11 +62,10 @@ public class CloudBackendService implements ServiceDiscoveryBackend {
     @Override
     public void remove(String uuid, Handler<AsyncResult<Record>> resultHandler) {
         Objects.requireNonNull(uuid, "No registration id in the record");
-
-        redis.send(cmd(HGET).arg(key).arg(uuid)).onComplete(ar -> {
+        redis.hget(key, uuid).onComplete(ar -> {
             if (ar.succeeded()) {
                 if (ar.result() != null) {
-                    redis.send(cmd(HDEL).arg(key).arg(uuid)).onComplete(deletion -> {
+                    redis.hdel(Arrays.asList(key, uuid)).onComplete(deletion -> {
                         if (deletion.succeeded()) {
                             resultHandler.handle(Future.succeededFuture(new Record(new JsonObject(ar.result().toBuffer()))));
                         } else {
@@ -88,7 +84,7 @@ public class CloudBackendService implements ServiceDiscoveryBackend {
     @Override
     public void update(Record record, Handler<AsyncResult<Void>> resultHandler) {
         Objects.requireNonNull(record.getRegistration(), "No registration id in the record");
-        redis.send(cmd(HSET).arg(key).arg(record.getRegistration()).arg(record.toJson().encode())).onComplete(ar -> {
+        redis.hset(Arrays.asList(key, record.getRegistration(), record.toJson().encode())).onComplete(ar -> {
             if (ar.succeeded()) {
                 resultHandler.handle(Future.succeededFuture());
             } else {
@@ -99,7 +95,7 @@ public class CloudBackendService implements ServiceDiscoveryBackend {
 
     @Override
     public void getRecords(Handler<AsyncResult<List<Record>>> resultHandler) {
-        redis.send(cmd(HGETALL).arg(key)).onComplete(ar -> {
+        redis.hgetall(key).onComplete(ar -> {
             if (ar.succeeded()) {
                 Response entries = ar.result();
                 resultHandler.handle(Future.succeededFuture(entries.getKeys().stream()
@@ -113,7 +109,7 @@ public class CloudBackendService implements ServiceDiscoveryBackend {
 
     @Override
     public void getRecord(String uuid, Handler<AsyncResult<Record>> resultHandler) {
-        redis.send(cmd(HGET).arg(key).arg(uuid)).onComplete(ar -> {
+        redis.hget(key, uuid).onComplete(ar -> {
             if (ar.succeeded()) {
                 if (ar.result() != null) {
                     resultHandler.handle(Future.succeededFuture(new Record(new JsonObject(ar.result().toBuffer()))));

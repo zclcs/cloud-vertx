@@ -30,7 +30,7 @@ public class PlatformSystem extends BaseDiscoveryVerticle {
         ConfigRetriever retriever = ConfigRetriever.create(vertx,
                 new ConfigRetrieverOptions().addStore(store));
         JsonObject config = await(retriever.getConfig());
-        String host = config.getString("SYSTEM_HTTP_ADDRESS", "localhost");
+        String host = config.getString("SYSTEM_HTTP_ADDRESS", "0.0.0.0");
         int port = config.getInteger("SYSTEM_HTTP_PORT", DEFAULT_PORT);
 
         Router router = Router.router(vertx);
