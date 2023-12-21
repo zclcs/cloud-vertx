@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":common:log4j2"))
     implementation(project(":common:web"))
     implementation(project(":cloud-lib:discovery"))
+    implementation("io.vertx:vertx-web-client")
 }
 
 var launcherClassName = "com.zclcs.PlatformGatewayVerticle"

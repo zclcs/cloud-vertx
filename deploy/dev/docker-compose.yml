@@ -1,15 +1,103 @@
 version: '3.4'
 services:
-  test:
-    image: ${CLOUD_DEPOSITORY_IP_PORT}${CLOUD_DEPOSITORY_URL}/test:${CLOUD_DEPOSITORY_TAG}
-    container_name: test
+  #  mysql:
+  #    image: ${CLOUD_DEPOSITORY_IP_PORT}/library/mysql:5.7.35
+  #    container_name: ${NAMESPACE}-mysql
+  #    network_mode: host
+  #    environment:
+  #      # 设置密码
+  #      MYSQL_ROOT_PASSWORD: ${DATASOURCE_ROOT_PASSWORD}
+  #      # 设置时区
+  #      TZ: Asia/Shanghai
+  #      LANG: en_US.UTF-8
+  #    volumes:
+  #      #挂载 MySQL数据
+  #      - ./mysql/data:/var/lib/mysql
+  #      #挂载 MySQL日志
+  #      #      - ./mysql/log:/var/log/mysql
+  #      #挂载 MySQL配置文件
+  #      - ./mysql/conf:/etc/mysql
+  #    healthcheck:
+  #      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+  #      interval: ${DOCKER_HEALTHCHECK_INTERVAL}
+  #      timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
+  #      retries: ${DOCKER_HEALTHCHECK_RETRIES}
+  #    env_file: .env
+  redis:
+    # https://www.cnblogs.com/lovling/p/12532549.html redis启动告警解决
+    image: ${CLOUD_DEPOSITORY_IP_PORT}/library/redis:7.0.5
+    container_name: ${NAMESPACE}-redis
     network_mode: host
     environment:
       # 设置时区
       TZ: Asia/Shanghai
       LANG: en_US.UTF-8
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo 1 > /proc/sys/vm/overcommit_memory
+        echo 1000 > /proc/sys/net/core/somaxconn
+        redis-server /etc/redis/redis.conf --requirepass ${REDIS_PASSWORD} --appendonly no
+    volumes:
+      - ./redis/data:/data #挂载 Redis数据
+      - ./redis/conf/redis.conf:/etc/redis/redis.conf #挂载 Redis配置
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:8888 || exit 1" ]
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: ${DOCKER_HEALTHCHECK_INTERVAL}
+      timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
+      retries: ${DOCKER_HEALTHCHECK_RETRIES}
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+    privileged: true
+    user: root
+    env_file: .env
+  #  nginx:
+  #    image: ${CLOUD_DEPOSITORY_IP_PORT}/library/nginx:1.21.3
+  #    container_name: ${NAMESPACE}-nginx
+  #    network_mode: host
+  #    environment:
+  #      # 设置时区
+  #      TZ: Asia/Shanghai
+  #      LANG: en_US.UTF-8
+  #    volumes:
+  #      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+  #      - ./nginx/templates:/etc/nginx/templates
+  #      #      - ./nginx/log:/var/log/nginx
+  #      - ./web:/var/cloud/web
+  #    healthcheck:
+  #      test: [ "CMD", "service", "nginx", "status" ]
+  #      interval: ${DOCKER_HEALTHCHECK_INTERVAL}
+  #      timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
+  #      retries: ${DOCKER_HEALTHCHECK_RETRIES}
+  #    deploy:
+  #      resources:
+  #        limits:
+  #          memory: 256M
+  #        reservations:
+  #          memory: 128M
+  #    env_file: .env
+  #    privileged: true
+  #    user: root
+  #    depends_on:
+  #      platform-gateway:
+  #        condition: service_healthy
+  platform-gateway:
+    image: ${CLOUD_DEPOSITORY_IP_PORT}${CLOUD_DEPOSITORY_URL}/platform-gateway:${CLOUD_DEPOSITORY_TAG}
+    container_name: ${NAMESPACE}-platform-gateway
+    network_mode: host
+    environment:
+      # 设置时区
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+    volumes:
+      - ./log/platform-gateway:/app/log
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:${PLATFORM_GATEWAY_HTTP_PORT} || exit 1" ]
       interval: ${DOCKER_HEALTHCHECK_INTERVAL}
       timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
       retries: ${DOCKER_HEALTHCHECK_RETRIES}
@@ -20,16 +108,21 @@ services:
         reservations:
           memory: 512M
     env_file: .env
-  test1:
-    image: ${CLOUD_DEPOSITORY_IP_PORT}${CLOUD_DEPOSITORY_URL}/test1:${CLOUD_DEPOSITORY_TAG}
-    container_name: test1
+    depends_on:
+      redis:
+        condition: service_healthy
+  platform-system:
+    image: ${CLOUD_DEPOSITORY_IP_PORT}${CLOUD_DEPOSITORY_URL}/platform-system:${CLOUD_DEPOSITORY_TAG}
+    container_name: ${NAMESPACE}-platform-system
     network_mode: host
     environment:
       # 设置时区
       TZ: Asia/Shanghai
       LANG: en_US.UTF-8
+    volumes:
+      - ./log/platform-system:/app/log
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:8888 || exit 1" ]
+      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:${PLATFORM_SYSTEM_HTTP_PORT} || exit 1" ]
       interval: ${DOCKER_HEALTHCHECK_INTERVAL}
       timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
       retries: ${DOCKER_HEALTHCHECK_RETRIES}
@@ -40,3 +133,6 @@ services:
         reservations:
           memory: 512M
     env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy

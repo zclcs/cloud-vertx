@@ -18,7 +18,7 @@ import static io.vertx.core.Future.await;
  */
 public class PlatformSystem extends BaseDiscoveryVerticle {
 
-    private static final int DEFAULT_PORT = 8788;
+    private static final int DEFAULT_PORT = 8201;
     private static final Logger log = LoggerFactory.getLogger(PlatformSystem.class);
     private WebStarterImpl webStart;
 
@@ -30,8 +30,8 @@ public class PlatformSystem extends BaseDiscoveryVerticle {
         ConfigRetriever retriever = ConfigRetriever.create(vertx,
                 new ConfigRetrieverOptions().addStore(store));
         JsonObject config = await(retriever.getConfig());
-        String host = config.getString("SYSTEM_HTTP_ADDRESS", "0.0.0.0");
-        int port = config.getInteger("SYSTEM_HTTP_PORT", DEFAULT_PORT);
+        String host = config.getString("PLATFORM_SYSTEM_HTTP_ADDRESS", "0.0.0.0");
+        int port = config.getInteger("PLATFORM_SYSTEM_HTTP_PORT", DEFAULT_PORT);
 
         Router router = Router.router(vertx);
 
