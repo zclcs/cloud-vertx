@@ -58,23 +58,22 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
     }
 
     private void dispatchRequests(RoutingContext context) {
-        // 转发路径/api/的长度
-        int initialOffset = 5;
-        String path = context.request().uri();
-
-        if (path.length() <= initialOffset) {
-            resp(context, Res.notFound());
-            return;
-        }
-        // 要转发的服务路径
-        String prefix = (path.substring(initialOffset)
-                .split("/"))[0];
-        // 转发的相对路径
-        String newPath = path.substring(initialOffset + prefix.length());
-        String finalPrefix = "/" + prefix;
-        String finalNewPath = "/" + newPath;
         circuitBreaker.executeWithFallback(
                         promise -> {
+                            // 转发路径/api/的长度
+                            int initialOffset = 5;
+                            String path = context.request().uri();
+
+                            if (path.length() <= initialOffset) {
+                                Future.succeededFuture(Res.notFound()).onComplete(promise);
+                            }
+                            // 要转发的服务路径
+                            String prefix = (path.substring(initialOffset)
+                                    .split("/"))[0];
+                            // 转发的相对路径
+                            String newPath = path.substring(initialOffset + prefix.length());
+                            String finalPrefix = "/" + prefix;
+                            String finalNewPath = "/" + newPath;
 
                             List<Record> records = await(Future.fromCompletionStage(recordsCache.get("all")));
                             // get one relevant HTTP client, may not exist
