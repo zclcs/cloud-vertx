@@ -73,46 +73,52 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
         String newPath = path.substring(initialOffset + prefix.length());
         String finalPrefix = "/" + prefix;
         String finalNewPath = "/" + newPath;
-        Res res = await(circuitBreaker.executeWithFallback(
-                promise -> {
+        circuitBreaker.executeWithFallback(
+                        promise -> {
 
-                    List<Record> records = await(Future.fromCompletionStage(recordsCache.get("all")));
-                    // get one relevant HTTP client, may not exist
-                    Optional<Record> client = records.stream()
-                            .filter(record -> record.getMetadata().getString("api.name") != null)
-                            .filter(record -> record.getMetadata().getString("api.name").equals(finalPrefix))
-                            .findAny();
+                            List<Record> records = await(Future.fromCompletionStage(recordsCache.get("all")));
+                            // get one relevant HTTP client, may not exist
+                            Optional<Record> client = records.stream()
+                                    .filter(record -> record.getMetadata().getString("api.name") != null)
+                                    .filter(record -> record.getMetadata().getString("api.name").equals(finalPrefix))
+                                    .findAny();
 
-                    if (client.isPresent()) {
-                        ServiceReference reference = discovery.getReference(client.get());
-                        HttpClient forward = reference.getAs(HttpClient.class);
-                        // send request to relevant HTTP client
-                        forward.request(context.request().method(), finalNewPath)
-                                .compose(req -> {
-                                    
-                                    context.request().headers().forEach(req::putHeader);
-                                    MultiMap headers = context.request().headers();
-                                    for (Map.Entry<String, String> header : headers) {
-                                        req.putHeader(header.getKey(), header.getValue());
-                                    }
-                                    if (context.body().isEmpty()) {
-                                        req.end();
-                                    } else {
-                                        req.end(context.body().buffer());
-                                    }
-                                    return req.send();
-                                })
-                                .compose(resp -> Future.succeededFuture(new Res(resp))).onComplete(promise);
-                        ServiceDiscovery.releaseServiceObject(discovery, client);
+                            if (client.isPresent()) {
+                                ServiceReference reference = discovery.getReference(client.get());
+                                HttpClient forward = reference.getAs(HttpClient.class);
+                                // send request to relevant HTTP client
+                                forward.request(context.request().method(), finalNewPath)
+                                        .compose(req -> {
+
+                                            context.request().headers().forEach(req::putHeader);
+                                            MultiMap headers = context.request().headers();
+                                            for (Map.Entry<String, String> header : headers) {
+                                                req.putHeader(header.getKey(), header.getValue());
+                                            }
+                                            if (context.body().isEmpty()) {
+                                                req.end();
+                                            } else {
+                                                req.end(context.body().buffer());
+                                            }
+                                            return req.send();
+                                        })
+                                        .compose(resp -> Future.succeededFuture(new Res(resp))).onComplete(promise);
+                                ServiceDiscovery.releaseServiceObject(discovery, client);
+                            } else {
+                                Future.succeededFuture(Res.serviceUnavailable()).onComplete(promise);
+                            }
+                        }, v -> {
+                            log.error("Circuit breaker is open", v);
+                            // Executed when the circuit is opened
+                            return Res.serviceUnavailable();
+                        })
+                .onComplete(res -> {
+                    if (res.succeeded()) {
+                        resp(context, res.result());
                     } else {
-                        Future.succeededFuture(Res.serviceUnavailable()).onComplete(promise);
+                        resp(context, Res.serviceUnavailable());
                     }
-                }, v -> {
-                    log.error("Circuit breaker is open", v);
-                    // Executed when the circuit is opened
-                    return Res.serviceUnavailable();
-                }));
-        resp(context, res);
+                });
     }
 
     /**
