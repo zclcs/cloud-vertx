@@ -120,10 +120,10 @@ public abstract class BaseDiscoveryVerticle extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
-        System.out.println("Stopping discovery service...");
         for (Record registeredRecord : registeredRecords) {
             await(discovery.unpublish(registeredRecord.getRegistration()));
         }
         discovery.close();
+        System.out.println("Stopping discovery service...");
     }
 }

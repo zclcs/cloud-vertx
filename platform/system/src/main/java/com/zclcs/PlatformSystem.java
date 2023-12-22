@@ -2,16 +2,11 @@ package com.zclcs;
 
 import com.zclcs.common.discovery.BaseDiscoveryVerticle;
 import com.zclcs.common.web.starter.WebStarterImpl;
-import io.vertx.config.ConfigRetriever;
-import io.vertx.config.ConfigRetrieverOptions;
-import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.vertx.core.Future.await;
 
 /**
  * @author zclcs
@@ -25,11 +20,6 @@ public class PlatformSystem extends BaseDiscoveryVerticle {
     @Override
     public void start() throws Exception {
         super.start();
-        ConfigStoreOptions store = new ConfigStoreOptions()
-                .setType("env");
-        ConfigRetriever retriever = ConfigRetriever.create(vertx,
-                new ConfigRetrieverOptions().addStore(store));
-        JsonObject config = await(retriever.getConfig());
         String host = config.getString("PLATFORM_SYSTEM_HTTP_ADDRESS", "0.0.0.0");
         int port = config.getInteger("PLATFORM_SYSTEM_HTTP_PORT", DEFAULT_PORT);
 

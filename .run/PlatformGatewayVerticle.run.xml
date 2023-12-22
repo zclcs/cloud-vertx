@@ -1,9 +1,10 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="PlatformGatewayVerticle" type="Application" factoryName="Application">
     <envs>
+      <env name="REDIS_HOST" value="192.168.3.190" />
+      <env name="REDIS_PASSWORD" value="" />
       <env name="VERTX-SERVICE-DISCOVERY-BACKEND-LOCAL" value="false" />
-      <env name="REDIS_HOST" value="192.168.33.10" />
-      <env name="REDIS_PASSWORD" value="123456" />
+      <env name="PLATFORM_GATEWAY_HTTP_PORT" value="8102" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="io.vertx.core.Launcher" />
     <module name="cloud-vertx.platform.gateway.main" />

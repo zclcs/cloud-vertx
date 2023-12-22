@@ -77,6 +77,7 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
             String host = forward.get().getLocation().getString("host");
             Integer port = forward.get().getLocation().getInteger("port");
             var req = await(client.request(context.request().method(), port, host, finalNewPath));
+            req.headers().addAll(context.request().headers());
             var resp = await(req.send());
             var status = resp.statusCode();
             var body = await(resp.body());
@@ -102,9 +103,7 @@ public class PlatformGateway extends BaseDiscoveryVerticle {
     public void resp(RoutingContext routingContext, Res res) {
         HttpServerResponse response = routingContext.response();
         response.setStatusCode(res.getStatusCode());
-        res.getHead().forEach(header -> {
-            response.putHeader(header.getKey(), header.getValue());
-        });
+        res.getHead().addAll(res.getHead());
         routingContext.end(res.getBody());
     }
 }

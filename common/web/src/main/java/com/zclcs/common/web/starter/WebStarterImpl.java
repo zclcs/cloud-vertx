@@ -13,6 +13,7 @@ public class WebStarterImpl implements StarterService {
     private final Router router;
     private final String host;
     private final int port;
+    private HttpServer httpServer;
 
     public WebStarterImpl(Vertx vertx, Router router, String host, int port) {
         this.vertx = vertx;
@@ -23,7 +24,11 @@ public class WebStarterImpl implements StarterService {
 
     @Override
     public void setUp() throws Exception {
-        HttpServer httpServer = vertx.createHttpServer().requestHandler(router);
+        httpServer = vertx.createHttpServer().requestHandler(router);
         await(httpServer.listen(port, host));
+    }
+
+    public HttpServer getHttpServer() {
+        return httpServer;
     }
 }
