@@ -14,9 +14,11 @@ include 'common:security-provider'
 include 'cloud-lib'
 include 'cloud-lib:cloud-core'
 include 'cloud-lib:rest'
-include 'cloud-lib:security-logic'
+include 'cloud-lib:security-logic-token'
 
 include 'platform'
 //include 'platform:gateway'
 //include 'platform:system'
+include 'common:local-cache'
+findProject(':common:local-cache')?.name = 'local-cache'
 

@@ -1,0 +1,4 @@
+dependencies {
+    api(project(":common:core"))
+    api("com.github.ben-manes.caffeine:caffeine")
+}

@@ -1,6 +1,6 @@
 dependencies {
     api(project(":cloud-lib:cloud-core"))
-    api(project(":cloud-lib:security-logic-token"))
-    api(project(":common:web"))
+    api(project(":common:security-provider"))
     api(project(":common:redis"))
+    api(project(":common:local-cache"))
 }

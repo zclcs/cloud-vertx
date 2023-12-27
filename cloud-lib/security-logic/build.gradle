@@ -1,4 +1,0 @@
-dependencies {
-    api(project(":cloud-lib:cloud-core"))
-//    api(project(":common:security-provider"))
-}
