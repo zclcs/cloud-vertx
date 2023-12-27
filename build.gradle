@@ -17,8 +17,8 @@ plugins {
 
 ext {
     javaVersion = JavaVersion.VERSION_21
-    bom = Set.of(project(":cloud-bom"), project(":platform"), project(":common"), project(":cloud-lib"))
-    applicationPackage = Set.of(project(":platform:gateway"), project(":platform:system"))
+    bom = Set.of(project(":cloud-bom"), project(":common"), project(":cloud-lib"))
+    applicationPackage = Set.of(project(":platform"))
     commons = (subprojects - bom)
 }
 
@@ -77,8 +77,4 @@ configure(applicationPackage) {
     apply plugin: "com.github.johnrengelman.shadow"
     sourceCompatibility = "$javaVersion"
     targetCompatibility = "$javaVersion"
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = "UTF-8"
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-    }
 }

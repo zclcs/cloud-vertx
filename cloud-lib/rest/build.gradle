@@ -1,0 +1,5 @@
+dependencies {
+    api(project(":cloud-lib:cloud-core"))
+    api(project(":cloud-lib:security-logic"))
+    api(project(":common:web"))
+}

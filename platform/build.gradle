@@ -1,5 +1,23 @@
-apply plugin: "java-platform"
+plugins {
+    id "application"
+}
 
-javaPlatform {
-    allowDependencies()
+dependencies {
+    implementation(project(":common:core"))
+    implementation(project(":common:config"))
+    implementation(project(":common:log4j2"))
+}
+
+var launcherClassName = "com.zclcs.PlatformApplication"
+
+application {
+    mainClass = launcherClassName
+}
+
+shadowJar {
+    archiveClassifier = "fat"
+
+    archiveBaseName.set("platform")
+
+    mergeServiceFiles()
 }
