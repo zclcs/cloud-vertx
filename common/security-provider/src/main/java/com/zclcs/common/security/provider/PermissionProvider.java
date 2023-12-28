@@ -9,8 +9,8 @@ import java.util.List;
  */
 public interface PermissionProvider {
 
-    Future<List<String>> getPermissions(String loginId, String loginType);
+    Future<List<String>> hasPermission(String loginId, String loginType, String permission);
 
-    Future<List<String>> getRoles(String loginId, String loginType);
+    Future<List<String>> hasRole(String loginId, String loginType, String role);
 
 }

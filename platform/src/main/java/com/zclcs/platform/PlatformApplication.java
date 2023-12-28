@@ -1,5 +1,6 @@
-package com.zclcs;
+package com.zclcs.platform;
 
+import com.zclcs.platform.system.PlatformSystemVerticle;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Launcher;
@@ -10,17 +11,17 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zclcs
  */
-public class PlatformSystemVerticle extends AbstractVerticle {
+public class PlatformApplication extends AbstractVerticle {
 
-    private final Logger log = LoggerFactory.getLogger(PlatformSystemVerticle.class);
+    private final Logger log = LoggerFactory.getLogger(PlatformApplication.class);
 
     public static void main(String[] args) {
-        Launcher.executeCommand("run", PlatformSystemVerticle.class.getName());
+        Launcher.executeCommand("run", PlatformApplication.class.getName());
     }
 
     @Override
     public void start() throws Exception {
-        vertx.deployVerticle(PlatformSystem.class, new DeploymentOptions()
+        vertx.deployVerticle(PlatformSystemVerticle.class, new DeploymentOptions()
                         .setThreadingModel(ThreadingModel.VIRTUAL_THREAD)).onSuccess(s -> {
                     log.info("PlatformSystem deploy success deployId {}", s);
                 })

@@ -9,17 +9,13 @@ public class WebStarter {
 
     private final Vertx vertx;
     private final Router router;
-    private final String host;
-    private final int port;
 
-    public WebStarter(Vertx vertx, Router router, String host, int port) {
+    public WebStarter(Vertx vertx, Router router) {
         this.vertx = vertx;
         this.router = router;
-        this.host = host;
-        this.port = port;
     }
 
-    public HttpServer setUpWebServer() throws Exception {
+    public HttpServer setUpWebServer(Integer port, String host) throws Exception {
         HttpServer httpServer = vertx.createHttpServer().requestHandler(router);
         Future.await(httpServer.listen(port, host));
         return httpServer;

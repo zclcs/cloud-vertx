@@ -7,6 +7,6 @@ import io.vertx.core.Future;
  */
 public interface LoginProvider {
 
-    Future<String> login(String loginId);
+    Future<String> login(String loginId, String deviceType);
 
 }

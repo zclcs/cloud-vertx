@@ -9,6 +9,9 @@ import io.vertx.redis.client.Response;
 
 import static io.vertx.core.Future.await;
 
+/**
+ * @author zclcs
+ */
 public class RedisTokenLogic implements TokenProvider {
 
     private final RedisAPI redis;
@@ -26,16 +29,17 @@ public class RedisTokenLogic implements TokenProvider {
     }
 
     @Override
-    public Future<Void> verifyToken(String token) {
+    public Future<Boolean> verifyToken(String token) {
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
         String localCacheResult = await(tokenLocalCache.getIfPresent(k));
         if (localCacheResult == null) {
             Response redisResult = await(redis.get(k));
             if (redisResult != null) {
                 await(tokenLocalCache.put(k, redisResult.toString()));
-                return Future.succeededFuture();
+                return Future.succeededFuture(true);
             }
+            return Future.succeededFuture(false);
         }
-        return Future.succeededFuture();
+        return Future.succeededFuture(true);
     }
 }

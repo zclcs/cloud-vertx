@@ -6,6 +6,6 @@ public interface TokenProvider {
 
     Future<String> generateToken();
 
-    Future<Void> verifyToken(String token);
+    Future<Boolean> verifyToken(String token);
 
 }
