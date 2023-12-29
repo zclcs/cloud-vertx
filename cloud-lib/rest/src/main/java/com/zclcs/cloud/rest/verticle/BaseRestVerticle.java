@@ -10,8 +10,10 @@ import com.zclcs.common.core.utils.StringsUtil;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -22,8 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.vertx.core.Future.await;
 
 /**
  * @author zclcs
@@ -43,17 +43,16 @@ public abstract class BaseRestVerticle extends BaseVerticle {
     protected List<HttpWhiteList> whiteList = new ArrayList<>();
 
     @Override
-    public void start() throws Exception {
+    public void start(Promise<Void> startPromise) throws Exception {
         super.start();
         RedisStarter redisStarter = new RedisStarter(vertx, config);
-        redis = redisStarter.connectRedis();
-        tokenProvider = new RedisTokenLogic(redis);
+        redis = redisStarter.connectRedis(startPromise);
+        tokenProvider = new RedisTokenLogic(redis, context);
         router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route("/*").handler(ctx -> {
             HttpMethod method = ctx.request().method();
             String path = ctx.request().path();
-
             for (HttpWhiteList whiteList : whiteList) {
                 if (method.name().equals(method.name()) && path.equals(whiteList.getPath())) {
                     ctx.next();
@@ -64,19 +63,25 @@ public abstract class BaseRestVerticle extends BaseVerticle {
             if (StringsUtil.isBlank(s)) {
                 RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
             } else {
-                Boolean verifyToken = await(tokenProvider.verifyToken(s));
-                if (verifyToken) {
-                    ctx.next();
-                } else {
-                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, HttpResult.msg("token已过期"));
-                }
+                tokenProvider.verifyToken(s, re -> {
+                    if (re.result() != null) {
+                        ctx.next();
+                    } else {
+                        RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, HttpResult.msg("token已过期"));
+                    }
+                });
             }
         });
         router.route().failureHandler((ctx) -> {
             log.error("failureHandler", ctx.failure());
             RoutingContextUtil.error(ctx, HttpResult.msg("服务器内部异常"));
         });
-        httpServer = vertx.createHttpServer();
+        httpServer = vertx.createHttpServer(new HttpServerOptions()
+                .setTcpFastOpen(true)
+                .setTcpCork(true)
+                .setTcpQuickAck(true)
+                .setReusePort(true)
+        );
         httpServer.exceptionHandler((e) -> log.error("http server exception", e));
     }
 

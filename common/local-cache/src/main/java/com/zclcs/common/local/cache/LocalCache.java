@@ -3,6 +3,8 @@ package com.zclcs.common.local.cache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.vertx.core.Future;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 
 import java.time.Duration;
 
@@ -10,6 +12,8 @@ import java.time.Duration;
  * @author zclcs
  */
 public class LocalCache<K, V> {
+
+    private final Logger log = LoggerFactory.getLogger(LocalCache.class);
 
     private int maximumSize = 5000;
 
@@ -40,6 +44,7 @@ public class LocalCache<K, V> {
     }
 
     public Future<V> getIfPresent(K key) {
+        log.info("getIfPresent: " + key);
         return Future.succeededFuture(localCache.getIfPresent(key));
     }
 
@@ -49,6 +54,7 @@ public class LocalCache<K, V> {
     }
 
     public Future<Void> put(K key, V value) {
+        log.info("put: " + key);
         localCache.put(key, value);
         return Future.succeededFuture();
     }

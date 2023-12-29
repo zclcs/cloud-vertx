@@ -8,7 +8,6 @@ include 'common:config'
 include 'common:log4j2'
 include 'common:redis'
 include 'common:rabbit'
-include 'common:web'
 include 'common:security-provider'
 
 include 'cloud-lib'

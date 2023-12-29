@@ -4,9 +4,10 @@ plugins {
 
 dependencies {
     implementation(project(":cloud-lib:rest"))
+    implementation("io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64")
 }
 
-var launcherClassName = "com.zclcs.PlatformApplication"
+var launcherClassName = "com.zclcs.platform.PlatformApplication"
 
 application {
     mainClass = launcherClassName

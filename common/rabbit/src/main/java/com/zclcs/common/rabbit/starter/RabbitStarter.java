@@ -1,16 +1,18 @@
 package com.zclcs.common.rabbit.starter;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQOptions;
-
-import static io.vertx.core.Future.await;
 
 /**
  * @author zclcs
  */
 public class RabbitStarter {
+
+    private final Logger log = LoggerFactory.getLogger(RabbitStarter.class);
 
     private final Vertx vertx;
     private final JsonObject config;
@@ -36,7 +38,13 @@ public class RabbitStarter {
         options.setAutomaticRecoveryEnabled(true);
         rabbit = RabbitMQClient.create(vertx, options);
         createExchange(config);
-        await(rabbit.start());
+        rabbit.start().onComplete(ar -> {
+            if (ar.succeeded()) {
+                log.info("RabbitMQ connect success");
+            } else {
+                log.info("RabbitMQ connect fail");
+            }
+        });
     }
 
     @Deprecated
