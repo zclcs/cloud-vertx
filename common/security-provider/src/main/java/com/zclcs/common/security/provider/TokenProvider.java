@@ -1,13 +1,12 @@
 package com.zclcs.common.security.provider;
 
-import io.vertx.core.AsyncResult;
+import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 
 public interface TokenProvider {
 
     Future<String> generateToken();
 
-    void verifyToken(String token, Handler<AsyncResult<String>> handler);
+    Single<String> verifyToken(String token);
 
 }

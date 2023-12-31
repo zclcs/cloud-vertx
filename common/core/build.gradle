@@ -1,3 +1,4 @@
 dependencies {
     api("io.vertx:vertx-core")
+    api("io.vertx:vertx-rx-java3")
 }

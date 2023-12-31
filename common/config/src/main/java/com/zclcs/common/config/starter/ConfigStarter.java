@@ -16,7 +16,13 @@ import com.zclcs.common.config.deserializer.MillisOrLocalDateDeserializer;
 import com.zclcs.common.config.deserializer.MillisOrLocalDateTimeDeserializer;
 import com.zclcs.common.config.deserializer.MillisOrLocalTimeDeserializer;
 import com.zclcs.common.core.constant.DatePattern;
+import io.reactivex.rxjava3.core.Single;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.rxjava3.config.ConfigRetriever;
+import io.vertx.rxjava3.core.Vertx;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -29,7 +35,13 @@ import java.util.TimeZone;
 /**
  * @author zhouc
  */
-public class JacksonStarter {
+public class ConfigStarter {
+
+    private final Vertx vertx;
+
+    public ConfigStarter(Vertx vertx) {
+        this.vertx = vertx;
+    }
 
     public void setUpMapper() {
         ObjectMapper mapper = DatabindCodec.mapper();
@@ -58,4 +70,13 @@ public class JacksonStarter {
         mapper.registerModule(javaTimeModule);
         mapper.findAndRegisterModules();
     }
+
+    public Single<JsonObject> config() {
+        ConfigStoreOptions store = new ConfigStoreOptions()
+                .setType("env");
+        ConfigRetriever retriever = ConfigRetriever.create(vertx,
+                new ConfigRetrieverOptions().addStore(store));
+        return retriever.getConfig();
+    }
+
 }
