@@ -16,13 +16,13 @@ import com.zclcs.common.config.deserializer.MillisOrLocalDateDeserializer;
 import com.zclcs.common.config.deserializer.MillisOrLocalDateTimeDeserializer;
 import com.zclcs.common.config.deserializer.MillisOrLocalTimeDeserializer;
 import com.zclcs.common.core.constant.DatePattern;
-import io.reactivex.rxjava3.core.Single;
+import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
-import io.vertx.rxjava3.config.ConfigRetriever;
-import io.vertx.rxjava3.core.Vertx;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -71,7 +71,7 @@ public class ConfigStarter {
         mapper.findAndRegisterModules();
     }
 
-    public Single<JsonObject> config() {
+    public Future<JsonObject> config() {
         ConfigStoreOptions store = new ConfigStoreOptions()
                 .setType("env");
         ConfigRetriever retriever = ConfigRetriever.create(vertx,

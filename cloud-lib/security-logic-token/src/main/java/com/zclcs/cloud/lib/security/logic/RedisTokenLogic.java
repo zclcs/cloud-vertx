@@ -4,11 +4,10 @@ import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.common.local.cache.AsyncLoadingCacheUtil;
 import com.zclcs.common.security.provider.TokenProvider;
-import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.rxjava3.redis.client.RedisAPI;
-import io.vertx.rxjava3.redis.client.Response;
+import io.vertx.redis.client.RedisAPI;
+import io.vertx.redis.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +33,8 @@ public class RedisTokenLogic implements TokenProvider {
     }
 
     @Override
-    public Single<String> verifyToken(String token) {
+    public Future<String> verifyToken(String token) {
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
-        return Single.fromCompletionStage(tokenLocalCache.get(k));
+        return Future.fromCompletionStage(tokenLocalCache.get(k));
     }
 }

@@ -9,18 +9,18 @@ import com.zclcs.common.core.constant.HttpStatus;
 import com.zclcs.common.core.utils.StringsUtil;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
-import io.reactivex.rxjava3.core.Completable;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
-import io.vertx.rxjava3.core.AbstractVerticle;
-import io.vertx.rxjava3.core.http.HttpServer;
-import io.vertx.rxjava3.core.http.HttpServerRequest;
-import io.vertx.rxjava3.ext.web.Router;
-import io.vertx.rxjava3.ext.web.RoutingContext;
-import io.vertx.rxjava3.ext.web.handler.BodyHandler;
-import io.vertx.rxjava3.redis.client.RedisAPI;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.redis.client.RedisAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,38 +52,48 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     protected RedisStarter redisStarter;
 
     @Override
-    public Completable rxStart() {
+    public void start() {
         ConfigStarter configStarter = new ConfigStarter(vertx);
-        return configStarter.config().doOnSuccess(jsonObject -> {
-                    config = jsonObject;
-                }).ignoreElement()
-                .andThen(Completable.defer(() -> {
+        configStarter.config()
+                .andThen(jsonObject -> {
+                    log.info("1");
+                    config = jsonObject.result();
                     redisStarter = new RedisStarter(vertx, config);
-                    return redisStarter.connectRedis()
-                            .doOnError(e -> {
+                    redisStarter.connectRedis()
+                            .onFailure(e -> {
                                 log.error("connect redis error {}", e.getMessage(), e);
-                                vertx.rxClose().subscribe();
+                                vertx.close();
                             })
-                            .doOnComplete(() -> redis = RedisAPI.api(redisStarter.getClient()));
-                }))
-                .andThen(Completable.defer(() -> {
-                    tokenProvider = new RedisTokenLogic(redis, context);
-                    return Completable.complete();
-                }))
-                .andThen(Completable.fromAction(this::addAuthFilter))
-                .andThen(Completable.defer(this::setUpHttpServer))
-                ;
+                            .andThen(connection -> {
+                                log.info("2");
+                                redis = RedisAPI.api(redisStarter.getClient());
+                                tokenProvider = new RedisTokenLogic(redis, context);
+                            })
+                            .andThen(connection -> {
+                                log.info("3");
+                                this.addAuthFilter();
+                            })
+                            .andThen(connection -> {
+                                log.info("4");
+                                this.setUpHttpServer().onFailure(e -> {
+                                    log.error("start http server error {}", e.getMessage(), e);
+                                    vertx.close();
+                                });
+                            })
+                    ;
+                })
+        ;
     }
 
     @Override
-    public Completable rxStop() {
-        return vertx.rxExecuteBlocking((Callable<Void>) () -> {
+    public void stop() {
+        vertx.executeBlocking((Callable<Void>) () -> {
             if (redisStarter.getClient() != null) {
                 redis.close();
                 redisStarter.getClient().close();
             }
             return null;
-        }).ignoreElement();
+        });
     }
 
     protected void addWhiteList(HttpWhiteList whiteList) {
@@ -98,34 +108,44 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route("/*").handler(ctx -> {
-            HttpMethod method = ctx.request().method();
-            String path = ctx.request().path();
-            for (HttpWhiteList whiteList : whiteList) {
-                if (method.name().equals(method.name()) && path.equals(whiteList.getPath())) {
-                    ctx.next();
-                }
-            }
-            HttpServerRequest request = ctx.request();
-            String s = request.headers().get("token");
-            if (StringsUtil.isBlank(s)) {
-                RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
-            } else {
-                tokenProvider.verifyToken(s).doOnSuccess(c -> {
-                    if (c != null) {
-                        ctx.next();
-                    } else {
-                        RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, HttpResult.msg("token已过期"));
-                    }
-                }).subscribe();
-            }
+            RoutingContextUtil.success(ctx, HttpResult.msg("success"));
         });
+//                .handler(ctx -> {
+//            auth(ctx);
+//        })
+        ;
         router.route().failureHandler((ctx) -> {
             log.error("failureHandler", ctx.failure());
             RoutingContextUtil.error(ctx, HttpResult.msg("服务器内部异常"));
         });
     }
 
-    private Completable setUpHttpServer() {
+    private Future<Void> auth(RoutingContext ctx) {
+        log.info("111");
+        HttpServerRequest request = ctx.request();
+        HttpMethod method = request.method();
+        String path = request.path();
+        for (HttpWhiteList whiteList : whiteList) {
+            if (method.name().equals(method.name()) && path.equals(whiteList.getPath())) {
+                ctx.next();
+            }
+        }
+        String s = request.headers().get("token");
+        if (StringsUtil.isBlank(s)) {
+            RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
+        } else {
+            tokenProvider.verifyToken(s).onComplete((data) -> {
+                if (data != null) {
+                    ctx.next();
+                } else {
+                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
+                }
+            });
+        }
+        return Future.succeededFuture();
+    }
+
+    private Future<HttpServer> setUpHttpServer() {
         httpServer = vertx.createHttpServer(new HttpServerOptions()
                 .setTcpFastOpen(true)
                 .setTcpCork(true)
@@ -137,7 +157,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         int port = config.getInteger("PLATFORM_SYSTEM_HTTP_PORT", 8201);
         addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, HttpResult.msg("UP")));
         httpServer.requestHandler(router);
-        return httpServer.rxListen(port, host).ignoreElement();
+        return httpServer.listen(port, host);
     }
 
 }

@@ -1,13 +1,14 @@
 package com.zclcs.common.redis.starter;
 
 import com.zclcs.common.core.utils.StringsUtil;
-import io.reactivex.rxjava3.core.Completable;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
+import io.vertx.redis.client.Redis;
+import io.vertx.redis.client.RedisConnection;
 import io.vertx.redis.client.RedisOptions;
-import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.redis.client.Redis;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,7 +29,7 @@ public class RedisStarter {
         this.config = config;
     }
 
-    public Completable connectRedis() {
+    public Future<RedisConnection> connectRedis() {
         RedisOptions options = new RedisOptions();
         String redisHost = config.getString("REDIS_HOST", "127.0.0.1");
         String redisPort = config.getString("REDIS_PORT", "6379");
@@ -44,7 +45,7 @@ public class RedisStarter {
         options.setMaxPoolWaiting(1000);
         client = Redis.createClient(vertx, options);
         log.info("redis connection url: " + connectionUrl);
-        return client.rxConnect().timeout(1, TimeUnit.SECONDS).ignoreElement();
+        return client.connect().timeout(1, TimeUnit.SECONDS);
     }
 
     public String getConnectionUrl() {

@@ -1,12 +1,12 @@
 package com.zclcs.common.rabbit.starter;
 
-import io.reactivex.rxjava3.core.Completable;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
+import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQOptions;
-import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.rabbitmq.RabbitMQClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author zclcs
@@ -24,7 +24,7 @@ public class RabbitStarter {
         this.config = config;
     }
 
-    public Completable connectRabbitMQ() {
+    public Future<Void> connectRabbitMQ() {
         RabbitMQOptions options = new RabbitMQOptions();
         options.setUser(config.getString("RABBITMQ_USER", "guest"));
         options.setPassword(config.getString("RABBITMQ_PASSWORD", "guest"));
@@ -38,17 +38,20 @@ public class RabbitStarter {
         options.setNetworkRecoveryInterval(500);
         options.setAutomaticRecoveryEnabled(true);
         rabbit = RabbitMQClient.create(vertx, options);
-        return rabbit.rxStart();
+        createExchange(config);
+        return rabbit.start();
     }
 
-    @Deprecated
-    public Completable createExchange() {
+    public void createExchange(JsonObject config) {
         String nacosNamespace = config.getString("NAMESPACE", "dev");
         String exchangeName = nacosNamespace + ".test.exchange";
         String queueName = nacosNamespace + ".test.queue";
         String routingKey = nacosNamespace + ".test.routingKey";
-        return rabbit.rxExchangeDelete(exchangeName)
-                .andThen(rabbit.rxQueueDeclare(queueName, true, false, false)).ignoreElement()
-                .andThen(rabbit.rxQueueBind(queueName, exchangeName, routingKey));
+        rabbit.addConnectionEstablishedCallback(promise -> {
+            rabbit.exchangeDeclare(exchangeName, "topic", true, false)
+                    .compose(v -> rabbit.queueDeclare(queueName, true, false, false))
+                    .compose(v -> rabbit.queueBind(queueName, exchangeName, routingKey))
+                    .onComplete(promise);
+        });
     }
 }

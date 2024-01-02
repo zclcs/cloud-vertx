@@ -1,4 +1,4 @@
-FROM 192.168.33.10:3000/library/java-17:1.0.0
+FROM 192.168.33.10:3000/library/java-21:1.0.0
 
 LABEL authors="zclcs"
 

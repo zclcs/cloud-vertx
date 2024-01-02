@@ -3,7 +3,7 @@
     <envs>
       <env name="NATIVE_TRANSPORT" value="true" />
       <env name="REDIS_HOST" value="192.168.33.10" />
-      <env name="REDIS_PASSWORD" value="12345" />
+      <env name="REDIS_PASSWORD" value="123456" />
       <env name="VERTX-SERVICE-DISCOVERY-BACKEND-LOCAL" value="false" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="com.zclcs.platform.PlatformApplication" />
