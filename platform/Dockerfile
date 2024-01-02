@@ -1,18 +1,22 @@
-FROM 192.168.33.10:3000/library/java-21:1.0.0
+FROM 192.168.33.10:3000/library/java-17:1.0.0
 
 LABEL authors="zclcs"
 
 ENV APP_DIR /app
 
+ENV APP_CONF conf
+
 ENV APP_FILE platform-1.0-fat.jar
 
 WORKDIR $APP_DIR
 COPY build/libs/$APP_FILE $APP_DIR/$APP_FILE
+COPY src/main/resources/conf $APP_DIR/$APP_CONF
 
 CMD java \
-    -server                                           \
+    -jar                                              \
     -XX:+UseNUMA                                      \
     -XX:+UseParallelGC                                \
+    -Dvertx.disableDnsResolver=true                   \
     -Dvertx.disableMetrics=true                       \
     -Dvertx.disableH2c=true                           \
     -Dvertx.disableWebsockets=true                    \
@@ -32,3 +36,5 @@ CMD java \
     $APP_FILE                                         \
     --instances                                       \
     `grep --count ^processor /proc/cpuinfo`           \
+    --options                                         \
+    $APP_CONF/vertx.json

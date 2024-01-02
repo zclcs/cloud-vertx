@@ -15,12 +15,13 @@ public class PlatformApplication {
     private static final Logger log = LoggerFactory.getLogger(PlatformApplication.class);
 
     public static void main(String[] args) {
-        Vertx vertx = Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
+        Vertx vertx = Vertx.vertx(new VertxOptions()
+                .setPreferNativeTransport(true));
         try {
             vertx.deployVerticle(PlatformSystemVerticle.class, new DeploymentOptions()).onSuccess(s -> {
                 log.info("PlatformSystem deploy success deployId {}", s);
             });
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("PlatformSystem deploy error", e);
         }
     }

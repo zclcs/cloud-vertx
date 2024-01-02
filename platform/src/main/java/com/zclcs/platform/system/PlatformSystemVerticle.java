@@ -53,10 +53,10 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     @Override
     public void start() {
+        log.info("isNativeTransportEnabled {}", vertx.isNativeTransportEnabled());
         ConfigStarter configStarter = new ConfigStarter(vertx);
         configStarter.config()
                 .andThen(jsonObject -> {
-                    log.info("1");
                     config = jsonObject.result();
                     redisStarter = new RedisStarter(vertx, config);
                     redisStarter.connectRedis()
@@ -65,16 +65,13 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                                 vertx.close();
                             })
                             .andThen(connection -> {
-                                log.info("2");
                                 redis = RedisAPI.api(redisStarter.getClient());
                                 tokenProvider = new RedisTokenLogic(redis, context);
                             })
                             .andThen(connection -> {
-                                log.info("3");
                                 this.addAuthFilter();
                             })
                             .andThen(connection -> {
-                                log.info("4");
                                 this.setUpHttpServer().onFailure(e -> {
                                     log.error("start http server error {}", e.getMessage(), e);
                                     vertx.close();
@@ -107,12 +104,8 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private void addAuthFilter() {
         router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
-        router.route("/*").handler(ctx -> {
-            RoutingContextUtil.success(ctx, HttpResult.msg("success"));
-        });
-//                .handler(ctx -> {
-//            auth(ctx);
-//        })
+        router.route("/*")
+                .handler(this::auth)
         ;
         router.route().failureHandler((ctx) -> {
             log.error("failureHandler", ctx.failure());
@@ -120,8 +113,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         });
     }
 
-    private Future<Void> auth(RoutingContext ctx) {
-        log.info("111");
+    private void auth(RoutingContext ctx) {
         HttpServerRequest request = ctx.request();
         HttpMethod method = request.method();
         String path = request.path();
@@ -135,14 +127,15 @@ public class PlatformSystemVerticle extends AbstractVerticle {
             RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
         } else {
             tokenProvider.verifyToken(s).onComplete((data) -> {
-                if (data != null) {
+                String result = data.result();
+                if (result != null) {
+                    log.info("token {}", result);
                     ctx.next();
                 } else {
                     RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, HttpResult.msg("未鉴权"));
                 }
             });
         }
-        return Future.succeededFuture();
     }
 
     private Future<HttpServer> setUpHttpServer() {
