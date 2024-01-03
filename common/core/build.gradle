@@ -1,4 +1,5 @@
 dependencies {
     api("org.slf4j:slf4j-api")
     api("io.vertx:vertx-core")
+    api("io.vertx:vertx-codegen")
 }

@@ -5,42 +5,13 @@ plugins {
 dependencies {
     implementation(project(":cloud-lib:security"))
     implementation(project(":common:mysql-client"))
-    implementation("io.vertx:vertx-codegen:4.5.1")
-    annotationProcessor("io.vertx:vertx-codegen:4.5.1")
-    implementation(project(":common:sql-client-templates"))
+    implementation(project(":cloud-lib:domain"))
     implementation(group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64")
-}
-
-tasks.register('annotationProcessing', JavaCompile) { // codegen
-    source = sourceSets.main.java
-    classpath = configurations.runtimeClasspath
-    destinationDirectory = project.file('build/generated/sources/annotationProcessor/java/main')
-    options.annotationProcessorPath = configurations.compileClasspath
-    options.compilerArgs = [
-            "-proc:only",
-            "-processor", "io.vertx.codegen.CodeGenProcessor"
-    ]
-}
-
-compileJava {
-    dependsOn annotationProcessing
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs += '${project.buildDir}/generated/main/java'
-        }
-    }
-}
-
-clean {
-    delete += '${project.buildDir}/generated/main/java'
 }
 
 var launcherClassName = "io.vertx.core.Launcher"
 
-var verticleClassName = "com.zclcs.platform.system.PlatformSystemVerticle"
+var verticleClassName = "com.zclcs.platform.PlatformApplication"
 
 application {
     mainClass = launcherClassName

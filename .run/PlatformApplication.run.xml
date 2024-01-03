@@ -1,15 +1,11 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="PlatformApplication" type="Application" factoryName="Application">
     <envs>
-      <env name="NATIVE_TRANSPORT" value="true" />
-      <env name="REDIS_HOST" value="192.168.33.10" />
-      <env name="REDIS_PASSWORD" value="123456" />
-      <env name="VERTX-SERVICE-DISCOVERY-BACKEND-LOCAL" value="false" />
+      <env name="VERTX_CONFIG_PATH" value="./src/main/resources/conf/config.json" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="io.vertx.core.Launcher" />
     <module name="cloud-vertx.platform.main" />
-    <option name="PROGRAM_PARAMETERS" value="run com.zclcs.platform.PlatformApplication" />
-    <option name="VM_PARAMETERS" value="-Dhazelcast.logging.type=slf4j -Dhazelcast.max.no.heartbeat.seconds=5 -Dhazelcast.diagnostics.enabled=true --add-modules java.se --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.management/sun.management=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED" />
+    <option name="PROGRAM_PARAMETERS" value="run com.zclcs.platform.PlatformApplication --conf platform/src/main/resources/conf/config.json" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.zclcs.*" />

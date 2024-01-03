@@ -1,4 +1,0 @@
-dependencies {
-    api(project(":common:core"))
-    api(annotationProcessor "io.vertx:vertx-codegen:4.5.1:processor")
-}

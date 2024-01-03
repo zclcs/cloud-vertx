@@ -1,15 +1,15 @@
 package com.zclcs.cloud.lib.security.logic;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.zclcs.cloud.core.constant.RedisPrefix;
-import com.zclcs.common.local.cache.AsyncLoadingCacheUtil;
+import com.zclcs.common.local.cache.LocalCache;
 import com.zclcs.common.security.provider.TokenProvider;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.redis.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 /**
  * @author zclcs
@@ -20,21 +20,34 @@ public class RedisTokenLogic implements TokenProvider {
 
     private final RedisAPI redis;
 
-    private final AsyncLoadingCache<String, String> tokenLocalCache;
+    private final LocalCache<String, String> tokenCache;
 
-    public RedisTokenLogic(RedisAPI redis, Context context) {
+    public RedisTokenLogic(RedisAPI redis) {
         this.redis = redis;
-        this.tokenLocalCache = AsyncLoadingCacheUtil.buildAsyncLoadingCache(context, k -> redis.get(k).map(Response::toString));
+        this.tokenCache = new LocalCache<>();
     }
 
     @Override
     public Future<String> generateToken() {
-        return null;
+        return Future.succeededFuture(UUID.randomUUID().toString().replace("-", ""));
     }
 
     @Override
     public Future<String> verifyToken(String token) {
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
-        return Future.fromCompletionStage(tokenLocalCache.get(k));
+        return tokenCache.getIfPresent(k).compose(v -> {
+            if (v != null) {
+                return Future.succeededFuture(v);
+            } else {
+                return redis.get(k).map(Response::toString).compose(rv -> {
+                    if (rv != null) {
+                        tokenCache.put(k, rv);
+                        return Future.succeededFuture(rv);
+                    } else {
+                        return Future.succeededFuture(null);
+                    }
+                });
+            }
+        });
     }
 }

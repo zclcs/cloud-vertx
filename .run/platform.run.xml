@@ -8,7 +8,7 @@
       </settings>
     </deployment>
     <method v="2">
-      <option name="Gradle.BeforeRunTask" enabled="true" tasks="clean shadowJar" externalProjectPath="$PROJECT_DIR$/platform" vmOptions="" scriptParameters="" />
+      <option name="Gradle.BeforeRunTask" enabled="false" tasks="clean build shadowJar" externalProjectPath="$PROJECT_DIR$/platform" vmOptions="" scriptParameters="" />
     </method>
   </configuration>
 </component>

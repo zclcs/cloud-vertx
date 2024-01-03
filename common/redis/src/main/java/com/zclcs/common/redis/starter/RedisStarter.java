@@ -26,9 +26,8 @@ public class RedisStarter {
     private Redis client;
 
     /**
-     * @param vertx  Vert.x Core API.
-     * @param env    环境变量
-     * @param config 配置文件
+     * @param vertx Vert.x Core API.
+     * @param env   环境变量
      */
     public RedisStarter(Vertx vertx, JsonObject env) {
         this.vertx = vertx;

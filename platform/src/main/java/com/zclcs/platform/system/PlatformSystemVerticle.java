@@ -64,13 +64,14 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                             })
                             .andThen(connection -> {
                                 redis = RedisAPI.api(redisStarter.getClient());
-                                tokenProvider = new RedisTokenLogic(redis, context);
+                                tokenProvider = new RedisTokenLogic(redis);
                             })
                             .andThen(connection -> {
                                 webStarter = new WebStarter(vertx, env);
                                 webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
                                 webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
-                                webStarter.setUpHttpServer(8201, "0.0.0.0",
+                                webStarter.setUpHttpServer(Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201")),
+                                                env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0"),
                                                 ctx -> RoutingContextUtil.error(ctx, WebUtil.msg("系统异常")))
                                         .onFailure(e -> {
                                             log.error("start http server error {}", e.getMessage(), e);

@@ -34,6 +34,17 @@ subprojects {
         maven { url "https://repo.spring.io/milestone" }
         mavenCentral()
     }
+
+    tasks.register('annotationProcessing', JavaCompile) {
+        source = sourceSets.main.java
+        classpath = configurations.runtimeClasspath
+        destinationDirectory = project.file("${project.getLayout().getBuildDirectory().get()}/generated/sources/annotationProcessor/java/main")
+        options.annotationProcessorPath = configurations.compileClasspath
+        options.compilerArgs = [
+                "-proc:only",
+                "-processor", "io.vertx.codegen.CodeGenProcessor"
+        ]
+    }
 }
 
 configure(commons) {
@@ -70,10 +81,26 @@ configure(commons) {
     compileJava.dependsOn(processResources)
 }
 
-
 configure(applicationPackage) {
     apply plugin: "java"
     apply plugin: "com.github.johnrengelman.shadow"
     sourceCompatibility = "$javaVersion"
     targetCompatibility = "$javaVersion"
+    compileJava.dependsOn(annotationProcessing)
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+
+    dependencies {
+        implementation("io.vertx:vertx-codegen")
+        annotationProcessor("io.vertx:vertx-codegen")
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += "${project.getLayout().getBuildDirectory().get()}/generated/sources/annotationProcessor/java/main"
+        }
+    }
 }
