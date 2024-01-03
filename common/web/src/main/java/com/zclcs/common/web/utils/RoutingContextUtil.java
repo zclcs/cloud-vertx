@@ -1,9 +1,7 @@
-package com.zclcs.cloud.rest.utils;
+package com.zclcs.common.web.utils;
 
-import com.zclcs.cloud.core.base.HttpResult;
 import com.zclcs.common.core.constant.HttpHeaders;
 import com.zclcs.common.core.constant.HttpStatus;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -11,24 +9,24 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class RoutingContextUtil {
 
-    public static <T> void success(RoutingContext ctx, HttpResult<T> result) {
+    public static <T> void success(RoutingContext ctx, String result) {
         ctx.response()
                 .setStatusCode(HttpStatus.HTTP_OK)
                 .putHeader(HttpHeaders.APPLICATION_JSON_UTF8.name(), HttpHeaders.APPLICATION_JSON_UTF8.value())
-                .end(Json.encode(result));
+                .end(result);
     }
 
-    public static <T> void error(RoutingContext ctx, HttpResult<T> result) {
+    public static <T> void error(RoutingContext ctx, String result) {
         ctx.response()
                 .setStatusCode(HttpStatus.HTTP_INTERNAL_ERROR)
                 .putHeader(HttpHeaders.APPLICATION_JSON_UTF8.name(), HttpHeaders.APPLICATION_JSON_UTF8.value())
-                .end(Json.encode(result));
+                .end(result);
     }
 
-    public static <T> void error(RoutingContext ctx, int httpStatus, HttpResult<T> result) {
+    public static <T> void error(RoutingContext ctx, int httpStatus, String result) {
         ctx.response()
                 .setStatusCode(httpStatus)
                 .putHeader(HttpHeaders.APPLICATION_JSON_UTF8.name(), HttpHeaders.APPLICATION_JSON_UTF8.value())
-                .end(Json.encode(result));
+                .end(result);
     }
 }

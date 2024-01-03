@@ -1,4 +1,4 @@
-package com.zclcs.cloud.rest.bean;
+package com.zclcs.cloud.core.bean;
 
 import io.vertx.core.http.HttpMethod;
 

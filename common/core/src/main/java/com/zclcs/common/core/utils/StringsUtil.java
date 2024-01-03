@@ -1,5 +1,8 @@
 package com.zclcs.common.core.utils;
 
+/**
+ * @author zclcs
+ */
 public class StringsUtil {
 
     public static boolean isEmpty(String str) {
@@ -23,6 +26,18 @@ public class StringsUtil {
 
     public static boolean isNotBlank(String str) {
         return !isBlank(str);
+    }
+
+    public static String chooseOneIsNotBlank(String... strs) {
+        if (strs == null) {
+            return null;
+        }
+        for (String str : strs) {
+            if (isNotBlank(str)) {
+                return str;
+            }
+        }
+        return null;
     }
 
 }

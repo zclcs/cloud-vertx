@@ -71,7 +71,7 @@ public class ConfigStarter {
         mapper.findAndRegisterModules();
     }
 
-    public Future<JsonObject> config() {
+    public Future<JsonObject> env() {
         ConfigStoreOptions store = new ConfigStoreOptions()
                 .setType("env");
         ConfigRetriever retriever = ConfigRetriever.create(vertx,

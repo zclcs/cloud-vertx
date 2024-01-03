@@ -1,0 +1,4 @@
+dependencies {
+    api(project(":common:core"))
+    api("io.vertx:vertx-mysql-client")
+}

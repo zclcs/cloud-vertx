@@ -13,7 +13,7 @@ COPY build/libs/$APP_FILE $APP_DIR/$APP_FILE
 COPY src/main/resources/conf $APP_DIR/$APP_CONF
 
 CMD java \
-    -jar                                              \
+    -server                                           \
     -XX:+UseNUMA                                      \
     -XX:+UseParallelGC                                \
     -Dvertx.disableDnsResolver=true                   \
@@ -36,5 +36,7 @@ CMD java \
     $APP_FILE                                         \
     --instances                                       \
     `grep --count ^processor /proc/cpuinfo`           \
+    --conf                                            \
+    $APP_CONF/config.json                             \
     --options                                         \
     $APP_CONF/vertx.json

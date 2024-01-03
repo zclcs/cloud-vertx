@@ -12,7 +12,5 @@ dependencies {
         api "org.slf4j:slf4j-api:$slf4jVersion"
         api "com.lmax:disruptor:$disruptorVersion"
         api "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
-        api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-        api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     }
 }

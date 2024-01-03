@@ -1,6 +1,5 @@
 dependencies {
     api(project(":cloud-lib:cloud-core"))
+    api(project(":cloud-lib:cloud-web"))
     api(project(":cloud-lib:security-logic-token"))
-    api("io.vertx:vertx-web")
-    api(project(":common:redis"))
 }

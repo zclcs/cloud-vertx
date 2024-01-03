@@ -1,12 +1,13 @@
 package com.zclcs.common.rabbit.starter;
 
+import com.zclcs.common.core.utils.StringsUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rabbitmq.RabbitMQClient;
 import io.vertx.rabbitmq.RabbitMQOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zclcs
@@ -16,27 +17,40 @@ public class RabbitStarter {
     private final Logger log = LoggerFactory.getLogger(RabbitStarter.class);
 
     private final Vertx vertx;
+    private final JsonObject env;
     private final JsonObject config;
     private RabbitMQClient rabbit;
 
-    public RabbitStarter(Vertx vertx, JsonObject config) {
+    public RabbitStarter(Vertx vertx, JsonObject env) {
         this.vertx = vertx;
-        this.config = config;
+        this.env = env;
+        this.config = vertx.getOrCreateContext().config();
     }
 
     public Future<Void> connectRabbitMQ() {
         RabbitMQOptions options = new RabbitMQOptions();
-        options.setUser(config.getString("RABBITMQ_USER", "guest"));
-        options.setPassword(config.getString("RABBITMQ_PASSWORD", "guest"));
-        options.setHost(config.getString("RABBITMQ_HOST", "127.0.0.1"));
-        options.setPort(config.getInteger("RABBITMQ_PORT", 5672));
-        options.setVirtualHost(config.getString("RABBITMQ_VIRTUAL_HOST", "/"));
-        options.setConnectionTimeout(6000);
-        options.setRequestedHeartbeat(60);
-        options.setHandshakeTimeout(6000);
-        options.setRequestedChannelMax(5);
-        options.setNetworkRecoveryInterval(500);
-        options.setAutomaticRecoveryEnabled(true);
+        String rabbitmqHost = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_HOST"), config.getString("rabbitmq.host"), "127.0.0.1");
+        String rabbitmqPort = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_PORT"), config.getString("rabbitmq.port"), "5672");
+        String rabbitmqUser = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_USER"), config.getString("rabbitmq.user"), "guest");
+        String rabbitmqPassword = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_PASSWORD"), config.getString("rabbitmq.password"), "guest");
+        String rabbitmqVirtualHost = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_VIRTUAL_HOST"), config.getString("rabbitmq.virtualHost"), "/");
+        String rabbitmqConnectionTimeOut = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_CONNECTION_TIME_OUT", config.getString("rabbitmq.connectionTimeOut", "6000")));
+        String rabbitmqRequestedHeartBeat = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_REQUESTED_HEART_BEAT"), config.getString("rabbitmq.requestedHeartBeat"), "60");
+        String rabbitmqHandshakeTimeOut = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_HANDSHAKE_TIME_OUT"), config.getString("rabbitmq.handshakeTimeOut"), "6000");
+        String rabbitmqChannelMax = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_CHANNEL_MAX"), config.getString("rabbitmq.channelMax"), "5");
+        String rabbitmqNetworkRecoveryInterval = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_NETWORK_RECOVERY_INTERVAL"), config.getString("rabbitmq.networkRecoveryInterval"), "500");
+        String rabbitmqAutomaticRecoveryEnabled = StringsUtil.chooseOneIsNotBlank(env.getString("RABBITMQ_AUTOMATIC_RECOVERY_ENABLED"), config.getString("rabbitmq.automaticRecoveryEnabled"), "true");
+        options.setHost(rabbitmqHost);
+        options.setPort(Integer.parseInt(rabbitmqPort));
+        options.setUser(rabbitmqUser);
+        options.setPassword(rabbitmqPassword);
+        options.setVirtualHost(rabbitmqVirtualHost);
+        options.setConnectionTimeout(Integer.parseInt(rabbitmqConnectionTimeOut));
+        options.setRequestedHeartbeat(Integer.parseInt(rabbitmqRequestedHeartBeat));
+        options.setHandshakeTimeout(Integer.parseInt(rabbitmqHandshakeTimeOut));
+        options.setRequestedChannelMax(Integer.parseInt(rabbitmqChannelMax));
+        options.setNetworkRecoveryInterval(Long.parseLong(rabbitmqNetworkRecoveryInterval));
+        options.setAutomaticRecoveryEnabled(Boolean.parseBoolean(rabbitmqAutomaticRecoveryEnabled));
         rabbit = RabbitMQClient.create(vertx, options);
         createExchange(config);
         return rabbit.start();
