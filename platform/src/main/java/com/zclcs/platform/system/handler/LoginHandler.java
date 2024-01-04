@@ -37,7 +37,6 @@ public class LoginHandler implements Handler<RoutingContext> {
         ValidatedRequest validatedRequest = ctx.get(KEY_META_DATA_VALIDATED_REQUEST);
         // Get the parameter value
         JsonObject jsonObject = validatedRequest.getBody().getJsonObject();
-        log.info(jsonObject.encode());
         String username = jsonObject.getString("username");
         getUser(username).timeout(1, TimeUnit.SECONDS)
                 .onComplete(ar -> {

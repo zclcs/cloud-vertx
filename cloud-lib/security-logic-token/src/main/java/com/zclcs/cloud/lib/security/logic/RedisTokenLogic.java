@@ -28,7 +28,7 @@ public class RedisTokenLogic implements TokenProvider {
     }
 
     @Override
-    public Future<String> generateToken() {
+    public Future<String> generateAndStoreToken(String loginId, String loginType) {
         return Future.succeededFuture(UUID.randomUUID().toString().replace("-", ""));
     }
 

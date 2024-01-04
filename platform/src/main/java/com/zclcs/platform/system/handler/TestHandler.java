@@ -31,13 +31,15 @@ public class TestHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext ctx) {
         String username = ctx.request().getParam("username");
         getUser(username).timeout(1, TimeUnit.SECONDS)
-                .onComplete(ar -> {
-                    User user = ar.result();
+                .onComplete(user -> {
                     if (user != null) {
                         RoutingContextUtil.success(ctx, Json.encode(user));
                     } else {
                         RoutingContextUtil.success(ctx, "用户名或密码错误");
                     }
+                }, e -> {
+                    log.error("查询用户异常", e);
+                    RoutingContextUtil.success(ctx, "用户名或密码错误");
                 });
     }
 
