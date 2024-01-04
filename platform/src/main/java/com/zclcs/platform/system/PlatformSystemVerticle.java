@@ -12,6 +12,7 @@ import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.common.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.handler.LoginHandler;
+import com.zclcs.platform.system.handler.TestHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.Json;
@@ -62,6 +63,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         configStarter.setUpMapper();
         configStarter.env()
                 .andThen(jsonObject -> {
+                    log.info("1");
                     config().getJsonArray("whiteList").stream().forEach(item -> {
                         if (item instanceof JsonObject) {
                             HttpWhiteList httpWhiteList = Json.decodeValue(item.toString(), HttpWhiteList.class);
@@ -70,6 +72,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                     });
                 })
                 .andThen(jsonObject -> {
+                    log.info("2");
                     env = jsonObject.result();
                     mysqlClientStarter = new MysqlClientStarter(vertx, env);
                     mysqlClient = mysqlClientStarter.connectMysql();
@@ -80,6 +83,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                     ;
                 })
                 .andThen(dc -> {
+                    log.info("3");
                     redisStarter = new RedisStarter(vertx, env);
                     redisStarter.connectRedis()
                             .onFailure(e -> {
@@ -87,20 +91,23 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                                 vertx.close();
                             })
                             .andThen(connection -> {
+                                log.info("4");
                                 redis = RedisAPI.api(redisStarter.getClient());
                                 tokenProvider = new RedisTokenLogic(redis);
-                            })
-                            .andThen(connection -> {
-                                OpenAPIContract.from(vertx, Objects.requireNonNull(getClass().getClassLoader().getResource("conf/openapi.json")).getPath())
+                                OpenAPIContract.from(vertx, Objects.requireNonNull(getClass().getClassLoader().getResource("/conf/openapi.json")).getPath())
                                         .onFailure(e -> {
                                             log.error("init openapi error {}", e.getMessage(), e);
                                             vertx.close();
                                         })
                                         .andThen(ar -> {
+                                            log.info("5");
                                             webStarter = new WebStarter(vertx, env, ar.result());
                                             this.initRoute(webStarter);
-                                            webStarter.setUpHttpServer(Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201")),
-                                                            env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0"),
+                                            int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
+                                            String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
+                                            log.info("http server start at {}:{}", platformSystemHttpHost, platformSystemHttpPort);
+                                            webStarter.setUpHttpServer(platformSystemHttpPort,
+                                                            platformSystemHttpHost,
                                                             ctx -> {
                                                                 Throwable failure = ctx.failure();
                                                                 if (failure instanceof ValidatorException validatorException) {
@@ -138,6 +145,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(mysqlClient));
         webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
+        webStarter.addRoute(HttpMethod.GET, "/test", new TestHandler(mysqlClient));
     }
 
 }
