@@ -32,8 +32,9 @@ public class SecurityHandler implements Handler<RoutingContext> {
         HttpMethod method = request.method();
         String path = request.path();
         for (HttpWhiteList whiteList : whiteList) {
-            if (method.name().equals(method.name()) && path.equals(whiteList.getPath())) {
+            if (method.name().equalsIgnoreCase(method.name()) && path.equals(whiteList.getPath())) {
                 ctx.next();
+                return;
             }
         }
         String s = request.headers().get("token");
@@ -45,7 +46,7 @@ public class SecurityHandler implements Handler<RoutingContext> {
                 if (result != null) {
                     ctx.next();
                 } else {
-                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, WebUtil.msg("未鉴权"));
+                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, WebUtil.msg("未登录"));
                 }
             });
         }

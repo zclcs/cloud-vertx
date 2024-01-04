@@ -1,8 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="PlatformApplication" type="Application" factoryName="Application">
-    <envs>
-      <env name="VERTX_CONFIG_PATH" value="./src/main/resources/conf/config.json" />
-    </envs>
     <option name="MAIN_CLASS_NAME" value="io.vertx.core.Launcher" />
     <module name="cloud-vertx.platform.main" />
     <option name="PROGRAM_PARAMETERS" value="run com.zclcs.platform.PlatformApplication --conf platform/src/main/resources/conf/config.json" />

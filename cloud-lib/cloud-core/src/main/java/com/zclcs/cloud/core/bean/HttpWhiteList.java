@@ -17,6 +17,9 @@ public class HttpWhiteList {
      */
     private String path;
 
+    public HttpWhiteList() {
+    }
+
     public HttpWhiteList(HttpMethod method, String path) {
         this.method = method;
         this.path = path;

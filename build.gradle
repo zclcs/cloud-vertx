@@ -34,17 +34,6 @@ subprojects {
         maven { url "https://repo.spring.io/milestone" }
         mavenCentral()
     }
-
-    tasks.register('annotationProcessing', JavaCompile) {
-        source = sourceSets.main.java
-        classpath = configurations.runtimeClasspath
-        destinationDirectory = project.file("${project.getLayout().getBuildDirectory().get()}/generated/sources/annotationProcessor/java/main")
-        options.annotationProcessorPath = configurations.compileClasspath
-        options.compilerArgs = [
-                "-proc:only",
-                "-processor", "io.vertx.codegen.CodeGenProcessor"
-        ]
-    }
 }
 
 configure(commons) {
@@ -86,7 +75,6 @@ configure(applicationPackage) {
     apply plugin: "com.github.johnrengelman.shadow"
     sourceCompatibility = "$javaVersion"
     targetCompatibility = "$javaVersion"
-    compileJava.dependsOn(annotationProcessing)
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
@@ -98,9 +86,26 @@ configure(applicationPackage) {
         annotationProcessor("io.vertx:vertx-codegen")
     }
 
+    tasks.register('annotationProcessing', JavaCompile) {
+        source = sourceSets.main.java
+        classpath = configurations.runtimeClasspath
+        destinationDirectory = project.file("${project.getLayout().getBuildDirectory().get()}/generated/java/main")
+        options.annotationProcessorPath = configurations.compileClasspath
+        sourceCompatibility = "$javaVersion"
+        targetCompatibility = "$javaVersion"
+        options.compilerArgs = [
+                "-proc:only",
+                "-processor", "io.vertx.codegen.CodeGenProcessor"
+        ]
+    }
+
+    compileJava {
+        dependsOn annotationProcessing
+    }
+
     sourceSets {
         main {
-            java.srcDirs += "${project.getLayout().getBuildDirectory().get()}/generated/sources/annotationProcessor/java/main"
+            java.srcDirs += "${project.getLayout().getBuildDirectory().get()}/generated/java/main"
         }
     }
 }

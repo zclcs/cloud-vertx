@@ -1,4 +1,4 @@
-package com.zclcs.platform.system.entity;
+package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
 import io.vertx.codegen.annotations.DataObject;
@@ -218,4 +218,5 @@ public class User extends BaseEntity implements Serializable {
     public void setDescription(String description) {
         this.description = description;
     }
+
 }
