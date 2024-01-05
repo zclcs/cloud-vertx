@@ -44,7 +44,6 @@ public class LocalCache<K, V> {
     }
 
     public Future<V> getIfPresent(K key) {
-        log.info("getIfPresent: " + key);
         return Future.succeededFuture(localCache.getIfPresent(key));
     }
 
@@ -54,7 +53,6 @@ public class LocalCache<K, V> {
     }
 
     public Future<Void> put(K key, V value) {
-        log.info("put: " + key);
         localCache.put(key, value);
         return Future.succeededFuture();
     }

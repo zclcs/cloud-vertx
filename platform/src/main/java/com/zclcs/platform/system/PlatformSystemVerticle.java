@@ -6,7 +6,6 @@ import com.zclcs.cloud.lib.web.utils.WebUtil;
 import com.zclcs.cloud.security.SecurityHandler;
 import com.zclcs.common.config.starter.ConfigStarter;
 import com.zclcs.common.core.constant.HttpStatus;
-import com.zclcs.common.discovery.starter.DiscoveryStarter;
 import com.zclcs.common.mysql.client.MysqlClientStarter;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
@@ -14,7 +13,7 @@ import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.common.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.handler.LoginHandler;
 import com.zclcs.platform.system.handler.TestHandler;
-import com.zclcs.platform.system.service.UserService;
+import com.zclcs.platform.system.service.impl.UserServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -25,7 +24,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.openapi.contract.OpenAPIContract;
 import io.vertx.openapi.validation.ValidatorException;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.servicediscovery.Record;
 import io.vertx.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +57,6 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private RedisStarter redisStarter;
 
-    private DiscoveryStarter discoveryStarter;
-
     private int port;
 
     private String host;
@@ -80,20 +76,15 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                     host = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
                     mysqlClientStarter = new MysqlClientStarter(vertx, env);
                     mysqlClient = mysqlClientStarter.createMysqlPool();
-                    mysqlClient.getConnection().onSuccess(mysqlConnection -> {
-                        log.info("test connect mysql success");
-                        mysqlConnection.close();
-                    }).onFailure(e -> {
-                        log.error("connect mysql error {}", e.getMessage(), e);
-                        vertx.close();
-                    });
-                    discoveryStarter = new DiscoveryStarter(vertx, jsonObject.result());
-                    discoveryStarter.startDiscovery();
-                    discoveryStarter.publishHttpEndpoint("platform-system", host, port, "/api/system")
-                            .onSuccess(records::add);
-                    discoveryStarter.publishEventBusService("platform-system", "1111",
-                                    UserService.class.getName())
-                            .onSuccess(records::add);
+                    mysqlClient.getConnection()
+                            .onSuccess(mysqlConnection -> {
+                                log.info("test connect mysql success");
+                                mysqlConnection.close();
+                            })
+                            .onFailure(e -> {
+                                log.error("connect mysql error {}", e.getMessage(), e);
+                                vertx.close();
+                            });
                     redisStarter = new RedisStarter(vertx, env);
                     redisStarter.connectRedis()
                             .onSuccess(redisConnection -> {
@@ -148,21 +139,13 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     @Override
     public void stop(Promise<Void> promise) {
         vertx.executeBlocking((Callable<Object>) () -> {
-            List<Future<Void>> futures = new ArrayList<>();
-            for (Record record : records) {
-                futures.add(discoveryStarter.getDiscovery().unpublish(record.getRegistration()));
+            if (redisStarter.getClient() != null) {
+                redisStarter.getClient().close();
             }
-            return Future.all(futures).onComplete(v -> {
-                if (redisStarter.getClient() != null) {
-                    redisStarter.getClient().close();
-                }
-                if (mysqlClient != null) {
-                    mysqlClient.close();
-                }
-                if (discoveryStarter != null) {
-                    discoveryStarter.getDiscovery().close();
-                }
-            });
+            if (mysqlClient != null) {
+                mysqlClient.close();
+            }
+            return null;
         }).onComplete(c -> promise.complete(), e -> {
             e.printStackTrace();
             promise.fail(e);
@@ -172,7 +155,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(mysqlClient));
-        webStarter.addOpenApiRoute("test", new TestHandler(mysqlClient, discoveryStarter.getDiscovery()));
+        webStarter.addOpenApiRoute("test", new TestHandler(new UserServiceImpl(mysqlClient, redis)));
         webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
     }
 

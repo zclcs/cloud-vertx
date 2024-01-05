@@ -9,6 +9,7 @@ import io.vertx.redis.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -24,7 +25,7 @@ public class RedisTokenLogic implements TokenProvider {
 
     public RedisTokenLogic(RedisAPI redis) {
         this.redis = redis;
-        this.tokenCache = new LocalCache<>();
+        this.tokenCache = new LocalCache<>(500, 10, Duration.ofSeconds(5));
     }
 
     @Override

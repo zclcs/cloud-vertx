@@ -3,8 +3,6 @@ package com.zclcs.platform.system.dao.entity;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.codegen.json.annotations.JsonGen;
-import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
@@ -19,7 +17,6 @@ import java.time.LocalDateTime;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
-@JsonGen
 public class User extends BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -109,16 +106,6 @@ public class User extends BaseEntity implements Serializable {
     private String description;
 
     public User() {
-    }
-    
-    public User(JsonObject json) {
-        UserConverter.fromJson(json, this);
-    }
-
-    public JsonObject toJson() {
-        JsonObject json = new JsonObject();
-        UserConverter.toJson(this, json);
-        return json;
     }
 
 
