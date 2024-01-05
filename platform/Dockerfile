@@ -14,6 +14,8 @@ COPY src/main/resources/conf $APP_DIR/$APP_CONF
 
 CMD java \
     -server                                           \
+    -Xms512m                                          \
+    -Xmx512m                                          \
     -XX:+UseNUMA                                      \
     -XX:+UseParallelGC                                \
     -Dvertx.disableDnsResolver=true                   \

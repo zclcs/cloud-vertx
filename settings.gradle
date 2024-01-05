@@ -13,14 +13,15 @@ include 'common:local-cache'
 include 'common:web'
 include 'common:mysql-client'
 include 'common:sql-client-templates'
+include 'common:discovery'
 
 include 'cloud-lib'
 include 'cloud-lib:cloud-core'
 include 'cloud-lib:cloud-web'
 include 'cloud-lib:security-logic-token'
 include 'cloud-lib:security'
+include 'cloud-lib:domain'
+include 'cloud-lib:redis-discovery-backend'
 
 include 'platform'
-include 'cloud-lib:domain'
-findProject(':cloud-lib:domain')?.name = 'domain'
 

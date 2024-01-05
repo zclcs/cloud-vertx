@@ -35,7 +35,18 @@ public class RedisStarter {
         this.config = vertx.getOrCreateContext().config();
     }
 
+    public Redis createClient() {
+        client = Redis.createClient(vertx, createRedisOptions());
+        return client;
+    }
+
     public Future<RedisConnection> connectRedis() {
+        createClient();
+        log.info("redis connectionUrl {}", connectionUrl);
+        return client.connect().timeout(1, TimeUnit.SECONDS);
+    }
+
+    private RedisOptions createRedisOptions() {
         RedisOptions options = new RedisOptions();
         String redisHost = StringsUtil.chooseOneIsNotBlank(env.getString("REDIS_HOST"), config.getString("redis.host"), "127.0.0.1");
         String redisPort = StringsUtil.chooseOneIsNotBlank(env.getString("REDIS_PORT"), config.getString("redis.port"), "6379");
@@ -51,9 +62,7 @@ public class RedisStarter {
         options.setConnectionString(connectionUrl);
         options.setMaxPoolSize(Integer.parseInt(redisMaxPoolSize));
         options.setMaxPoolWaiting(Integer.parseInt(redisMaxPoolWaiting));
-        client = Redis.createClient(vertx, options);
-        log.info("redis connection url {}", connectionUrl);
-        return client.connect().timeout(1, TimeUnit.SECONDS);
+        return options;
     }
 
     public String getConnectionUrl() {

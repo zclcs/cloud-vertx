@@ -1,0 +1,5 @@
+dependencies {
+    api(project(":common:core"))
+    api("io.vertx:vertx-service-discovery")
+    api("io.vertx:vertx-service-proxy")
+}

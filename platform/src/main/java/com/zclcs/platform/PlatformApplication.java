@@ -16,6 +16,8 @@ public class PlatformApplication extends AbstractVerticle {
     @Override
     public void start() throws Exception {
         vertx.deployVerticle(PlatformSystemVerticle.class.getName(), new DeploymentOptions().setConfig(config()))
-                .onSuccess(s -> log.info("PlatformSystem deploy success deployId {}", s));
+                .onSuccess(s -> {
+                    log.info("PlatformSystem deploy success deployId {}", s);
+                });
     }
 }

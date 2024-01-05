@@ -32,13 +32,14 @@ public class MysqlClientStarter {
         this.config = vertx.getOrCreateContext().config();
     }
 
-    public Pool connectMysql() {
+    public Pool createMysqlPool() {
         String mysqlPort = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_PORT"), config.getString("mysql.port"), "3306");
         String mysqlHost = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_HOST"), config.getString("mysql.host"), "127.0.0.1");
         String mysqlDatabase = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_DATABASE"), config.getString("mysql.database"), "default");
         String mysqlUser = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_USER"), config.getString("mysql.user"), "root");
         String mysqlPassword = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_PASSWORD"), config.getString("mysql.password"), "123456");
-        String mysqlCharset = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_CHARSET"), config.getString("mysql.charset"), "utf8");
+        String mysqlCharset = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_CHARSET"), config.getString("mysql.charset"), "utf8mb4");
+        String mysqlCollation = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_COLLATION"), config.getString("mysql.collation"), "utf8mb4_general_ci");
 
         MySQLConnectOptions connectOptions = new MySQLConnectOptions()
                 .setPort(Integer.parseInt(mysqlPort))
@@ -46,7 +47,8 @@ public class MysqlClientStarter {
                 .setDatabase(mysqlDatabase)
                 .setUser(mysqlUser)
                 .setPassword(mysqlPassword)
-                .setCharset(mysqlCharset);
+                .setCharset(mysqlCharset)
+                .setCollation(mysqlCollation);
 
         String mysqlPoolMaxSize = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_POOL_MAX_SIZE"), config.getString("mysql.pool.maxSize"), "20");
         String mysqlPoolMaxWaitQueueSize = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_POOL_MAX_WAIT_QUEUE_SIZE"), config.getString("mysql.pool.maxWaitQueueSize"), "1000");
@@ -60,6 +62,7 @@ public class MysqlClientStarter {
                 .setConnectionTimeout(Integer.parseInt(mysqlPoolConnectionTimeout))
                 .setIdleTimeout(Integer.parseInt(mysqlPoolIdleTimeout))
                 .setPoolCleanerPeriod(Integer.parseInt(mysqlPoolCleanerPeriod));
+        log.info("mysql connectOptions: {}", connectOptions.toJson());
 
         return MySQLBuilder.pool()
                 .with(poolOptions)
