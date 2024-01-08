@@ -26,4 +26,12 @@ public interface UserService {
      */
     Future<List<String>> getUserPermission(String username);
 
+    /**
+     * 删除用户相关缓存
+     *
+     * @param username 用户名
+     * @return 成功
+     */
+    Future<Boolean> deleteUserRelatedCache(String username);
+
 }

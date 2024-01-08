@@ -125,4 +125,12 @@ public class UserServiceImpl implements UserService {
             }
         });
     }
+
+    @Override
+    public Future<Boolean> deleteUserRelatedCache(String username) {
+        return redis.del(List.of(String.format(RedisPrefix.USER_PREFIX, username), String.format(RedisPrefix.USER_PERMISSION_PREFIX, username)))
+                .map(v -> v.toInteger() > 0);
+    }
+
+
 }
