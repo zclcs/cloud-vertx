@@ -29,7 +29,8 @@ public class UserServiceImpl implements UserService {
 
     private final Pool dbClient;
     private final RedisAPI redis;
-    private static final Duration REDIS_CACHE_EXPIRE = Duration.ofDays(1);
+
+    private final Duration redisTokenExpire = Duration.ofDays(1);
 
     public UserServiceImpl(Pool dbClient, RedisAPI redis) {
         this.dbClient = dbClient;
@@ -66,7 +67,8 @@ public class UserServiceImpl implements UserService {
                                     }
                                 }).compose(dv -> {
                                     if (dv != null) {
-                                        redis.set(List.of(k, Json.encode(dv), "EX", String.valueOf(REDIS_CACHE_EXPIRE.getSeconds())));
+                                        String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+                                        redis.set(List.of(k, Json.encode(dv), "EX", expireTime));
                                         return Future.succeededFuture(dv);
                                     } else {
                                         return Future.succeededFuture(null);
@@ -114,7 +116,8 @@ public class UserServiceImpl implements UserService {
                                     }
                                     return permissions;
                                 }).compose(dv -> {
-                                    redis.set(List.of(k, Json.encode(dv), "EX", String.valueOf(REDIS_CACHE_EXPIRE.getSeconds())));
+                                    String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+                                    redis.set(List.of(k, Json.encode(dv), "EX", expireTime));
                                     return Future.succeededFuture(dv);
                                 });
                     }
