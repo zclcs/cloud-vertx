@@ -2,6 +2,8 @@ package com.zclcs.common.security.provider;
 
 import io.vertx.core.Future;
 
+import java.time.Duration;
+
 /**
  * @author zclcs
  */
@@ -19,9 +21,16 @@ public interface TokenProvider {
     /**
      * 验证token
      *
-     * @param token
+     * @param token token
      * @return 用户实体（用户名、手机号等等）
      */
     Future<String> verifyToken(String token);
+
+    /**
+     * token过期时间
+     *
+     * @return token过期时间
+     */
+    Duration getRedisTokenExpire();
 
 }

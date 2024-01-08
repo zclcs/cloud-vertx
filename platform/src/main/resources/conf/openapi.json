@@ -145,11 +145,17 @@
       "loginByUsernameAo": {
         "type": "object",
         "required": [
-          "username"
+          "username",
+          "password"
         ],
         "properties": {
           "username": {
-            "type": "string"
+            "type": "string",
+            "description": "用户名"
+          },
+          "password": {
+            "type": "string",
+            "description": "密码（需加密）加密方式 aes 模式 CFB 填充 NoPadding 偏移量 密钥字符串 在线生成网址： <a href=\"https://oktools.net/aes\">点击跳转</a>"
           }
         }
       },

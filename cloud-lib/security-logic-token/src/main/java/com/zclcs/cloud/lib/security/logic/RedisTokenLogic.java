@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -23,14 +24,24 @@ public class RedisTokenLogic implements TokenProvider {
 
     private final LocalCache<String, String> tokenCache;
 
+    private final Duration redisTokenExpire = Duration.ofDays(1);
+
     public RedisTokenLogic(RedisAPI redis) {
         this.redis = redis;
-        this.tokenCache = new LocalCache<>(500, 10, Duration.ofSeconds(5));
+        this.tokenCache = new LocalCache<>(10000, 10, Duration.ofSeconds(5));
     }
 
     @Override
     public Future<String> generateAndStoreToken(String loginId, String loginType) {
-        return Future.succeededFuture(UUID.randomUUID().toString().replace("-", ""));
+        String token = UUID.randomUUID().toString().replace("-", "");
+        String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
+        return redis.set(List.of(k, loginId, "EX", String.valueOf(redisTokenExpire.getSeconds() + Math.random() * 100 + 1))).compose(rv -> {
+            if (rv != null) {
+                return Future.succeededFuture(token);
+            } else {
+                return Future.failedFuture("token生成失败");
+            }
+        });
     }
 
     @Override
@@ -50,5 +61,20 @@ public class RedisTokenLogic implements TokenProvider {
                 });
             }
         });
+    }
+
+    public Future<Void> deleteToken(String token) {
+        return redis.del(List.of(String.format(RedisPrefix.TOKEN_PREFIX, token))).compose(rv -> {
+            if (rv != null) {
+                return Future.succeededFuture(null);
+            } else {
+                return Future.failedFuture("token删除失败");
+            }
+        });
+    }
+
+    @Override
+    public Duration getRedisTokenExpire() {
+        return redisTokenExpire;
     }
 }

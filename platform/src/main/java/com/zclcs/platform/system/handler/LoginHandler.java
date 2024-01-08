@@ -1,19 +1,23 @@
 package com.zclcs.platform.system.handler;
 
+import com.zclcs.cloud.lib.web.utils.WebUtil;
+import com.zclcs.common.core.security.BCrypt;
+import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.dao.entity.User;
-import com.zclcs.platform.system.dao.entity.UserRowMapper;
-import io.vertx.core.Future;
+import com.zclcs.platform.system.dao.vo.UserTokenVo;
+import com.zclcs.platform.system.service.UserService;
 import io.vertx.core.Handler;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.openapi.validation.ValidatedRequest;
-import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.templates.SqlTemplate;
 import org.slf4j.Logger;
 
-import java.util.Collections;
+import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
 import static io.vertx.ext.web.openapi.router.RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST;
@@ -25,10 +29,13 @@ public class LoginHandler implements Handler<RoutingContext> {
 
     private final Logger log = org.slf4j.LoggerFactory.getLogger(getClass());
 
-    private final Pool dbClient;
+    private final UserService userService;
 
-    public LoginHandler(Pool mysqlClient) {
-        this.dbClient = mysqlClient;
+    private final TokenProvider tokenProvider;
+
+    public LoginHandler(UserService userService, TokenProvider tokenProvider) {
+        this.userService = userService;
+        this.tokenProvider = tokenProvider;
     }
 
     @Override
@@ -38,28 +45,39 @@ public class LoginHandler implements Handler<RoutingContext> {
         // Get the parameter value
         JsonObject jsonObject = validatedRequest.getBody().getJsonObject();
         String username = jsonObject.getString("username");
-        getUser(username).timeout(1, TimeUnit.SECONDS)
-                .onComplete(ar -> {
+        String password = jsonObject.getString("password");
+        userService.getUser(username).timeout(1, TimeUnit.SECONDS)
+                .andThen(ar -> {
                     User user = ar.result();
                     if (user != null) {
-                        RoutingContextUtil.success(ctx, Json.encode(user));
+                        if ("0".equals(user.getStatus())) {
+                            RoutingContextUtil.error(ctx, WebUtil.msg("用户被禁用"));
+                            return;
+                        }
+                        try {
+                            Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
+                            SecretKey keySpec = new SecretKeySpec("123456".getBytes(StandardCharsets.UTF_8), "AES");
+                            cipher.init(Cipher.DECRYPT_MODE, keySpec);
+                            String passwordPlainText = new String(cipher.doFinal(password.getBytes(StandardCharsets.UTF_8)));
+                            boolean checkPassword = BCrypt.checkPassword(passwordPlainText, user.getPassword());
+                            if (checkPassword) {
+                                tokenProvider.generateAndStoreToken(user.getUsername(), "PC")
+                                        .onComplete(r -> {
+                                            RoutingContextUtil.success(ctx, WebUtil.data(new UserTokenVo(r, tokenProvider.getRedisTokenExpire().getSeconds(), user)));
+                                        }, e -> {
+                                            RoutingContextUtil.error(ctx, "token生成失败");
+                                        });
+                            } else {
+                                RoutingContextUtil.error(ctx, "用户名或密码错误");
+                            }
+                        } catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
+                                 InvalidKeyException | BadPaddingException e) {
+                            RoutingContextUtil.error(ctx, "用户名或密码错误");
+                        }
+                        user.setPassword(null);
+                        RoutingContextUtil.success(ctx, WebUtil.data(user));
                     } else {
-                        RoutingContextUtil.success(ctx, "用户名或密码错误");
-                    }
-                });
-    }
-
-    private Future<User> getUser(String loginId) {
-        return SqlTemplate.forQuery(dbClient, """
-                        SELECT * FROM system_user WHERE username = #{loginId}
-                        """)
-                .mapTo(UserRowMapper.INSTANCE)
-                .execute(Collections.singletonMap("loginId", loginId))
-                .map(rs -> {
-                    if (rs.iterator().hasNext()) {
-                        return rs.iterator().next();
-                    } else {
-                        return null;
+                        RoutingContextUtil.error(ctx, "用户名或密码错误");
                     }
                 });
     }

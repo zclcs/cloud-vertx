@@ -44,6 +44,8 @@ public class SecurityHandler implements Handler<RoutingContext> {
             tokenProvider.verifyToken(s).onComplete((data) -> {
                 String result = data.result();
                 if (result != null) {
+                    ctx.put("loginId", result);
+                    ctx.put("token", s);
                     ctx.next();
                 } else {
                     RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, WebUtil.msg("未登录"));
