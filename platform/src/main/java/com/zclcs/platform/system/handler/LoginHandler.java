@@ -55,16 +55,23 @@ public class LoginHandler implements Handler<RoutingContext> {
                             return;
                         }
                         try {
-                            Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
-                            SecretKey keySpec = new SecretKeySpec("123456".getBytes(StandardCharsets.UTF_8), "AES");
-                            cipher.init(Cipher.DECRYPT_MODE, keySpec);
-                            String passwordPlainText = new String(cipher.doFinal(password.getBytes(StandardCharsets.UTF_8)));
+                            String passwordPlainText = "";
+                            boolean isDecodePassword = false;
+                            if (isDecodePassword) {
+                                Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
+                                SecretKey keySpec = new SecretKeySpec("123456".getBytes(StandardCharsets.UTF_8), "AES");
+                                cipher.init(Cipher.DECRYPT_MODE, keySpec);
+                                passwordPlainText = new String(cipher.doFinal(password.getBytes(StandardCharsets.UTF_8)));
+                            } else {
+                                passwordPlainText = password;
+                            }
                             boolean checkPassword = BCrypt.checkPassword(passwordPlainText, user.getPassword());
                             if (checkPassword) {
                                 tokenProvider.generateAndStoreToken(user.getUsername(), "PC")
                                         .onComplete(r -> {
                                             RoutingContextUtil.success(ctx, WebUtil.data(new UserTokenVo(r, tokenProvider.getRedisTokenExpire().getSeconds(), user)));
                                         }, e -> {
+                                            log.error("message {}", e.getMessage(), e);
                                             RoutingContextUtil.error(ctx, "token生成失败");
                                         });
                             } else {
@@ -74,8 +81,6 @@ public class LoginHandler implements Handler<RoutingContext> {
                                  InvalidKeyException | BadPaddingException e) {
                             RoutingContextUtil.error(ctx, "用户名或密码错误");
                         }
-                        user.setPassword(null);
-                        RoutingContextUtil.success(ctx, WebUtil.data(user));
                     } else {
                         RoutingContextUtil.error(ctx, "用户名或密码错误");
                     }

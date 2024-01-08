@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +36,8 @@ public class RedisTokenLogic implements TokenProvider {
     public Future<String> generateAndStoreToken(String loginId, String loginType) {
         String token = UUID.randomUUID().toString().replace("-", "");
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
-        return redis.set(List.of(k, loginId, "EX", String.valueOf(redisTokenExpire.getSeconds() + Math.random() * 100 + 1))).compose(rv -> {
+        String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+        return redis.set(Arrays.asList(k, loginId, "EX", expireTime)).compose(rv -> {
             if (rv != null) {
                 return Future.succeededFuture(token);
             } else {
