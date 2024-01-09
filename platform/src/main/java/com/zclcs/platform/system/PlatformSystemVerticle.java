@@ -6,6 +6,7 @@ import com.zclcs.cloud.lib.web.utils.WebUtil;
 import com.zclcs.cloud.security.SecurityHandler;
 import com.zclcs.common.config.starter.ConfigStarter;
 import com.zclcs.common.core.constant.HttpStatus;
+import com.zclcs.common.core.utils.AESUtil;
 import com.zclcs.common.mysql.client.MysqlClientStarter;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
@@ -28,11 +29,11 @@ import io.vertx.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 /**
  * @author zclcs
@@ -64,9 +65,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private final Set<Record> records = new HashSet<>();
 
     @Override
-    public void start() {
+    public void start() throws NoSuchAlgorithmException {
         long currentTimeMillis = System.currentTimeMillis();
-        log.info("isNativeTransportEnabled {}", vertx.isNativeTransportEnabled());
+        log.info("isNativeTransportEnabled {} {}", vertx.isNativeTransportEnabled(), AESUtil.generateKey(128).getAlgorithm());
         ConfigStarter configStarter = new ConfigStarter(vertx);
         configStarter.setUpMapper();
         initWhiteList();
@@ -142,7 +143,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     @Override
     public void stop(Promise<Void> promise) {
-        vertx.executeBlocking((Callable<Object>) () -> {
+        vertx.executeBlocking(() -> {
             if (redisStarter.getClient() != null) {
                 redisStarter.getClient().close();
             }

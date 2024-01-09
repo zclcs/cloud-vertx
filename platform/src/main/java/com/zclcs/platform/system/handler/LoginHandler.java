@@ -56,7 +56,7 @@ public class LoginHandler implements Handler<RoutingContext> {
                         }
                         try {
                             String passwordPlainText = "";
-                            boolean isDecodePassword = false;
+                            boolean isDecodePassword = true;
                             if (isDecodePassword) {
                                 Cipher cipher = Cipher.getInstance("AES/CFB/NoPadding");
                                 SecretKey keySpec = new SecretKeySpec("123456".getBytes(StandardCharsets.UTF_8), "AES");
@@ -79,6 +79,7 @@ public class LoginHandler implements Handler<RoutingContext> {
                             }
                         } catch (NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
                                  InvalidKeyException | BadPaddingException e) {
+                            log.error("message {}", e.getMessage(), e);
                             RoutingContextUtil.error(ctx, "用户名或密码错误");
                         }
                     } else {

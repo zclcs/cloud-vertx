@@ -7,9 +7,9 @@ import io.vertx.core.Future;
  */
 public class AsyncBloomFilter {
 
-    private boolean[] bits;
-    private int capacity;
-    private int hashFunctions;
+    private final boolean[] bits;
+    private final int capacity;
+    private final int hashFunctions;
     private int hashSeed;
 
     public AsyncBloomFilter(int capacity, int hashFunctions) {
