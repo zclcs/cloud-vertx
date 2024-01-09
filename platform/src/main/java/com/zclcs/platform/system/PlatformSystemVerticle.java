@@ -65,6 +65,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     @Override
     public void start() {
+        long currentTimeMillis = System.currentTimeMillis();
         log.info("isNativeTransportEnabled {}", vertx.isNativeTransportEnabled());
         ConfigStarter configStarter = new ConfigStarter(vertx);
         configStarter.setUpMapper();
@@ -122,7 +123,10 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                                                                                     log.error("系统异常 {}", failure.getMessage(), failure);
                                                                                 }
                                                                             })
-                                                                    .onSuccess(server -> log.info("http server start at {}:{}", host, port))
+                                                                    .onSuccess(server -> {
+                                                                        log.info("http server start at {}:{}", host, port);
+                                                                        log.info("platformSystemVerticle start cost {} ms", System.currentTimeMillis() - currentTimeMillis);
+                                                                    })
                                                                     .onFailure(e -> {
                                                                         log.error("start http server error {}", e.getMessage(), e);
                                                                         vertx.close();
