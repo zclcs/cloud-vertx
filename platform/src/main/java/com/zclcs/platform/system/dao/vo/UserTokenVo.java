@@ -1,7 +1,5 @@
 package com.zclcs.platform.system.dao.vo;
 
-import com.zclcs.platform.system.dao.entity.User;
-
 import java.io.Serial;
 import java.io.Serializable;
 
@@ -29,9 +27,9 @@ public class UserTokenVo implements Serializable {
     /**
      * 用户信息
      */
-    private User userinfo;
+    private LoginVo userinfo;
 
-    public UserTokenVo(String token, Long expire, User userinfo) {
+    public UserTokenVo(String token, Long expire, LoginVo userinfo) {
         this.token = token;
         this.expire = expire;
         this.userinfo = userinfo;
@@ -53,11 +51,11 @@ public class UserTokenVo implements Serializable {
         this.expire = expire;
     }
 
-    public User getUserinfo() {
+    public LoginVo getUserinfo() {
         return userinfo;
     }
 
-    public void setUserinfo(User userinfo) {
+    public void setUserinfo(LoginVo userinfo) {
         this.userinfo = userinfo;
     }
 }

@@ -6,7 +6,6 @@ import com.zclcs.cloud.lib.web.utils.WebUtil;
 import com.zclcs.cloud.security.SecurityHandler;
 import com.zclcs.common.config.starter.ConfigStarter;
 import com.zclcs.common.core.constant.HttpStatus;
-import com.zclcs.common.core.utils.AESUtil;
 import com.zclcs.common.mysql.client.MysqlClientStarter;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
@@ -14,6 +13,7 @@ import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.common.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.handler.LoginHandler;
 import com.zclcs.platform.system.handler.TestHandler;
+import com.zclcs.platform.system.handler.VerifyCodeHandler;
 import com.zclcs.platform.system.service.impl.UserServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -29,7 +29,6 @@ import io.vertx.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -65,9 +64,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private final Set<Record> records = new HashSet<>();
 
     @Override
-    public void start() throws NoSuchAlgorithmException {
+    public void start() {
         long currentTimeMillis = System.currentTimeMillis();
-        log.info("isNativeTransportEnabled {} {}", vertx.isNativeTransportEnabled(), AESUtil.generateKey(128).getAlgorithm());
+        log.info("isNativeTransportEnabled {}", vertx.isNativeTransportEnabled());
         ConfigStarter configStarter = new ConfigStarter(vertx);
         configStarter.setUpMapper();
         initWhiteList();
@@ -159,7 +158,8 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
-        webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(new UserServiceImpl(mysqlClient, redis), tokenProvider));
+        webStarter.addOpenApiRoute("code", new VerifyCodeHandler(redis));
+        webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(redis, new UserServiceImpl(mysqlClient, redis), tokenProvider));
         webStarter.addOpenApiRoute("test", new TestHandler(new UserServiceImpl(mysqlClient, redis)));
         webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
     }

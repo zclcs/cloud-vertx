@@ -1,7 +1,9 @@
 package com.zclcs.platform.system.service.impl;
 
 import com.zclcs.cloud.core.constant.RedisPrefix;
+import com.zclcs.common.config.utils.JsonUtil;
 import com.zclcs.common.local.cache.LocalCache;
+import com.zclcs.platform.system.dao.cache.UserCacheVo;
 import com.zclcs.platform.system.dao.entity.User;
 import com.zclcs.platform.system.dao.entity.UserRowMapper;
 import com.zclcs.platform.system.service.UserService;
@@ -37,12 +39,28 @@ public class UserServiceImpl implements UserService {
         this.redis = redis;
     }
 
-    private final LocalCache<String, User> userCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
+    private final LocalCache<String, UserCacheVo> userCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
 
     private final LocalCache<String, List<String>> permissionCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
 
     @Override
     public Future<User> getUser(String username) {
+        return SqlTemplate.forQuery(dbClient, """
+                        SELECT * FROM system_user WHERE username = #{loginId}
+                        """)
+                .mapTo(UserRowMapper.INSTANCE)
+                .execute(Collections.singletonMap("loginId", username))
+                .map(rs -> {
+                    if (rs.iterator().hasNext()) {
+                        return rs.iterator().next();
+                    } else {
+                        return null;
+                    }
+                });
+    }
+
+    @Override
+    public Future<UserCacheVo> getUserCache(String username) {
         String k = String.format(RedisPrefix.USER_PREFIX, username);
         return userCache.getIfPresent(k).compose(v -> {
             if (v != null) {
@@ -50,30 +68,25 @@ public class UserServiceImpl implements UserService {
             } else {
                 return redis.get(k).compose(rv -> {
                     if (rv != null) {
-                        User user = Json.decodeValue(rv.toString(), User.class);
+                        UserCacheVo user = Json.decodeValue(rv.toString(), UserCacheVo.class);
                         userCache.put(k, user);
                         return Future.succeededFuture(user);
                     } else {
-                        return SqlTemplate.forQuery(dbClient, """
-                                        SELECT * FROM system_user WHERE username = #{loginId}
-                                        """)
-                                .mapTo(UserRowMapper.INSTANCE)
-                                .execute(Collections.singletonMap("loginId", username))
-                                .map(rs -> {
-                                    if (rs.iterator().hasNext()) {
-                                        return rs.iterator().next();
-                                    } else {
-                                        return null;
-                                    }
-                                }).compose(dv -> {
-                                    if (dv != null) {
-                                        String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
-                                        redis.set(List.of(k, Json.encode(dv), "EX", expireTime));
-                                        return Future.succeededFuture(dv);
-                                    } else {
-                                        return Future.succeededFuture(null);
-                                    }
-                                });
+                        return getUser(username).map(dv -> {
+                            if (dv != null) {
+                                return new UserCacheVo(dv);
+                            } else {
+                                return null;
+                            }
+                        }).compose(dv -> {
+                            if (dv != null) {
+                                String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+                                redis.set(List.of(k, JsonUtil.toJson(dv), "EX", expireTime));
+                                return Future.succeededFuture(dv);
+                            } else {
+                                return Future.succeededFuture(null);
+                            }
+                        });
                     }
                 });
             }
@@ -81,7 +94,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Future<List<String>> getUserPermission(String username) {
+    public Future<List<String>> getUserPermissionCache(String username) {
         String k = String.format(RedisPrefix.USER_PERMISSION_PREFIX, username);
         return permissionCache.getIfPresent(k).compose(v -> {
             if (v != null) {
@@ -117,7 +130,7 @@ public class UserServiceImpl implements UserService {
                                     return permissions;
                                 }).compose(dv -> {
                                     String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
-                                    redis.set(List.of(k, Json.encode(dv), "EX", expireTime));
+                                    redis.set(List.of(k, JsonUtil.toJson(dv), "EX", expireTime));
                                     return Future.succeededFuture(dv);
                                 });
                     }

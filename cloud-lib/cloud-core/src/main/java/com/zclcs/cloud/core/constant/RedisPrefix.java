@@ -8,4 +8,6 @@ public class RedisPrefix {
 
     public static final String USER_PERMISSION_PREFIX = "user:permission:%s";
 
+    public static final String VERIFY_CODE_PREFIX = "verify:code:%s";
+
 }

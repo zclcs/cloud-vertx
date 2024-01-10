@@ -71,4 +71,41 @@ public class CodeCUtil {
         return str;
     }
 
+    /**
+     * 字节数组转换为16进制字符串
+     *
+     * @param bytes 字节数组
+     * @return 16进制字符串
+     */
+    public static String bytesToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            // 将字节转换为16进制字符串
+            String hex = Integer.toHexString(b & 0xFF);
+            if (hex.length() == 1) {
+                // 如果字节只有一位，则在结果字符串前补0
+                sb.append('0');
+            }
+            sb.append(hex);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 16进制字符串转换为字节数组
+     *
+     * @param hexString 16进制字符串
+     * @return 字节数组
+     */
+    public static byte[] hexStringToBytes(String hexString) {
+        int len = hexString.length();
+        byte[] bytes = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            bytes[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                    + Character.digit(hexString.charAt(i + 1), 16));
+        }
+        return bytes;
+    }
+
+
 }

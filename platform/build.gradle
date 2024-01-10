@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":cloud-lib:domain"))
 //    implementation(project(":cloud-lib:redis-discovery-backend"))
     implementation(project(":common:mysql-client"))
+    implementation(project(":common:verify-code"))
     implementation(group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64")
 }
 
