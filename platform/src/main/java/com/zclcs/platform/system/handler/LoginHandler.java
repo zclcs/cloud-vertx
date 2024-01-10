@@ -26,6 +26,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -40,12 +41,15 @@ public class LoginHandler implements Handler<RoutingContext> {
 
     private final RedisAPI redis;
 
+    private final JsonObject config;
+
     private final UserService userService;
 
     private final TokenProvider tokenProvider;
 
-    public LoginHandler(RedisAPI redis, UserService userService, TokenProvider tokenProvider) {
+    public LoginHandler(RedisAPI redis, JsonObject config, UserService userService, TokenProvider tokenProvider) {
         this.redis = redis;
+        this.config = config;
         this.userService = userService;
         this.tokenProvider = tokenProvider;
     }
@@ -59,9 +63,11 @@ public class LoginHandler implements Handler<RoutingContext> {
         String password = jsonObject.getString("password");
         String code = query.get("code").getString();
         String randomStr = query.get("randomStr").getString();
-        redis.get(String.format(RedisPrefix.VERIFY_CODE_PREFIX, randomStr))
+        String verifyCodeRedisPrefix = String.format(RedisPrefix.VERIFY_CODE_PREFIX, randomStr);
+        redis.get(verifyCodeRedisPrefix)
                 .andThen(redisAr -> {
-                    if (redisAr.succeeded() && redisAr.toString().equals(code)) {
+                    if (redisAr.succeeded() && redisAr.result().toString().equalsIgnoreCase(code)) {
+                        redis.del(Collections.singletonList(verifyCodeRedisPrefix));
                         userService.getUserCache(username).timeout(1, TimeUnit.SECONDS)
                                 .andThen(ar -> {
                                     UserCacheVo user = ar.result();
@@ -72,7 +78,7 @@ public class LoginHandler implements Handler<RoutingContext> {
                                         }
                                         try {
                                             String passwordPlainText = "";
-                                            boolean isDecodePassword = true;
+                                            boolean isDecodePassword = config.getBoolean("decodePassword");
                                             if (isDecodePassword) {
                                                 String key = "eXTqsEKIPRsksJSK";
                                                 passwordPlainText = new String(AESUtil.decryptCFB(Base64.getDecoder().decode(password),

@@ -9,6 +9,7 @@
   "mysql.password": "123456",
   "mysql.database": "dev_platform_system",
   "mysql.charset": "utf8mb4",
+  "decodePassword": true,
   "whiteList": [
     {
       "method": "POST",

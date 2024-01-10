@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author zclcs
@@ -80,7 +81,7 @@ public class UserServiceImpl implements UserService {
                             }
                         }).compose(dv -> {
                             if (dv != null) {
-                                String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+                                String expireTime = String.valueOf(redisTokenExpire.getSeconds() + new Random().nextLong(100) + 1L);
                                 redis.set(List.of(k, JsonUtil.toJson(dv), "EX", expireTime));
                                 return Future.succeededFuture(dv);
                             } else {
@@ -129,7 +130,7 @@ public class UserServiceImpl implements UserService {
                                     }
                                     return permissions;
                                 }).compose(dv -> {
-                                    String expireTime = String.valueOf(redisTokenExpire.getSeconds() + (long) ((Math.random() * 100) + 1));
+                                    String expireTime = String.valueOf(redisTokenExpire.getSeconds() + new Random().nextLong(100) + 1L);
                                     redis.set(List.of(k, JsonUtil.toJson(dv), "EX", expireTime));
                                     return Future.succeededFuture(dv);
                                 });

@@ -159,7 +159,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("code", new VerifyCodeHandler(redis));
-        webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(redis, new UserServiceImpl(mysqlClient, redis), tokenProvider));
+        webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(redis, config(), new UserServiceImpl(mysqlClient, redis), tokenProvider));
         webStarter.addOpenApiRoute("test", new TestHandler(new UserServiceImpl(mysqlClient, redis)));
         webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
     }
