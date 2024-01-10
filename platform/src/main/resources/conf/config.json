@@ -10,6 +10,7 @@
   "mysql.database": "dev_platform_system",
   "mysql.charset": "utf8mb4",
   "decodePassword": true,
+  "passwordKey": "eXTqsEKIPRsksJSK",
   "whiteList": [
     {
       "method": "POST",

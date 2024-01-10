@@ -80,7 +80,7 @@ public class LoginHandler implements Handler<RoutingContext> {
                                             String passwordPlainText = "";
                                             boolean isDecodePassword = config.getBoolean("decodePassword");
                                             if (isDecodePassword) {
-                                                String key = "eXTqsEKIPRsksJSK";
+                                                String key = config.getString("passwordKey");
                                                 passwordPlainText = new String(AESUtil.decryptCFB(Base64.getDecoder().decode(password),
                                                         key.getBytes(StandardCharsets.UTF_8),
                                                         key.getBytes(StandardCharsets.UTF_8))
