@@ -9,8 +9,10 @@
   "mysql.password": "123456",
   "mysql.database": "dev_platform_system",
   "mysql.charset": "utf8mb4",
-  "decodePassword": true,
-  "passwordKey": "eXTqsEKIPRsksJSK",
+  "mysql.collation": "utf8mb4_unicode_ci",
+  "login.decode.password": true,
+  "login.check.verify.code": true,
+  "login.decode.password.key": "eXTqsEKIPRsksJSK",
   "whiteList": [
     {
       "method": "POST",

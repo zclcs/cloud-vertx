@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "version": "1.0.0",
-    "title": "Swagger Petstore",
+    "title": "cloud-vertx",
     "license": {
       "identifier": "MIT",
       "name": "MIT License"
@@ -10,19 +10,22 @@
   },
   "servers": [
     {
-      "url": "https://petstore.swagger.io/petstore"
+      "url": "http:127.0.0.1:8201"
     }
   ],
   "security": [
     {
-      "BasicAuth": []
+      "BearerAuth": [
+        "#/components/securitySchemes/BearerAuth"
+      ]
     }
   ],
   "paths": {
     "/code": {
       "get": {
+        "security": [],
         "summary": "获取验证码",
-        "operationId": "code",
+        "operationId": "VerifyCodeHandler",
         "tags": [
           "登录"
         ],
@@ -43,7 +46,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/loginByUsernameAo"
+                  "$ref": "#/components/schemas/LoginByUsernameHandlerAo"
                 }
               }
             }
@@ -53,8 +56,9 @@
     },
     "/login/token/byUsername": {
       "post": {
+        "security": [],
         "summary": "用户登录",
-        "operationId": "loginTokenByUsername",
+        "operationId": "LoginByUsernameHandler",
         "tags": [
           "登录"
         ],
@@ -84,36 +88,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/loginByUsernameAo"
+                "$ref": "#/components/schemas/LoginByUsernameHandlerAo"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "A paged array of pets",
-            "headers": {
-              "x-next": {
-                "description": "A link to the next page of responses",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
+            "description": "成功",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/loginByUsernameVo"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LoginByUsernameHandlerVo"
                 }
               }
             }
@@ -121,8 +107,37 @@
         }
       }
     },
+    "/user/permissions": {
+      "get": {
+        "summary": "获取用户权限",
+        "operationId": "UserPermissionsHandler",
+        "tags": [
+          "用户"
+        ],
+        "responses": {
+          "200": {
+            "description": "权限合集"
+          }
+        }
+      }
+    },
+    "/user/routers": {
+      "get": {
+        "summary": "获取用户路由",
+        "operationId": "UserRoutersHandler",
+        "tags": [
+          "用户"
+        ],
+        "responses": {
+          "200": {
+            "description": "路由合集"
+          }
+        }
+      }
+    },
     "/test": {
       "get": {
+        "security": [],
         "summary": "test",
         "operationId": "test",
         "tags": [
@@ -142,28 +157,10 @@
         "responses": {
           "200": {
             "description": "A paged array of pets",
-            "headers": {
-              "x-next": {
-                "description": "A link to the next page of responses",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/loginByUsernameVo"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LoginByUsernameHandlerVo"
                 }
               }
             }
@@ -173,8 +170,14 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
     "schemas": {
-      "loginByUsernameAo": {
+      "LoginByUsernameHandlerAo": {
         "type": "object",
         "required": [
           "username",
@@ -187,37 +190,114 @@
           },
           "password": {
             "type": "string",
-            "description": "密码（需加密）加密方式 aes 模式 CFB 填充 NoPadding 偏移量 密钥字符串 在线生成网址： <a href=\"https://oktools.net/aes\">点击跳转</a>"
+            "description": "密码（需加密）加密方式 aes 编码Base64 模式 CFB 填充 NoPadding 密钥 密钥字符串 偏移量 密钥字符串 在线生成网址： <a href=\"https://www.mklab.cn/utils/aes\">点击跳转</a>"
           }
         }
       },
-      "loginByUsernameVo": {
+      "LoginByUsernameHandlerVo": {
         "type": "object",
-        "required": [
-          "name"
-        ],
         "properties": {
-          "name": {
-            "type": "string"
-          },
-          "tag": {
-            "type": "string"
-          }
-        }
-      },
-      "Error": {
-        "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
+          "data": {
+            "type": "object",
+            "description": "返回数据",
+            "properties": {
+              "userId": {
+                "type": [
+                  "string"
+                ],
+                "description": "用户id"
+              },
+              "username": {
+                "type": [
+                  "string"
+                ],
+                "description": "用户名"
+              },
+              "realName": {
+                "type": [
+                  "string"
+                ],
+                "description": "用户昵称"
+              },
+              "deptId": {
+                "type": [
+                  "string"
+                ],
+                "description": "部门id"
+              },
+              "email": {
+                "type": [
+                  "string"
+                ],
+                "description": "邮箱"
+              },
+              "mobile": {
+                "type": [
+                  "string"
+                ],
+                "description": "联系电话"
+              },
+              "status": {
+                "type": [
+                  "string"
+                ],
+                "description": "状态 @@system_user.status"
+              },
+              "statusText": {
+                "type": [
+                  "string"
+                ],
+                "description": "状态 @@system_user.status"
+              },
+              "lastLoginTime": {
+                "type": [
+                  "string"
+                ],
+                "description": "最近访问时间"
+              },
+              "gender": {
+                "type": [
+                  "string"
+                ],
+                "description": "性别 @@system_user.gender"
+              },
+              "genderText": {
+                "type": [
+                  "string"
+                ],
+                "description": "性别 @@system_user.gender"
+              },
+              "isTab": {
+                "type": [
+                  "string"
+                ],
+                "description": "是否开启tab @@yes_no"
+              },
+              "isTabText": {
+                "type": [
+                  "string"
+                ],
+                "description": "是否开启tab @@yes_no"
+              },
+              "theme": {
+                "type": [
+                  "string"
+                ],
+                "description": "主题"
+              },
+              "avatar": {
+                "type": [
+                  "string"
+                ],
+                "description": "头像"
+              },
+              "description": {
+                "type": [
+                  "string"
+                ],
+                "description": "描述"
+              }
+            }
           }
         }
       }

@@ -1,7 +1,6 @@
 package com.zclcs.platform.system.handler;
 
-import com.zclcs.cloud.lib.web.utils.WebUtil;
-import com.zclcs.common.web.utils.RoutingContextUtil;
+import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.service.UserService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -25,7 +24,7 @@ public class TestHandler implements Handler<RoutingContext> {
         String username = ctx.request().getParam("username");
         userService.deleteUserRelatedCache(username).onComplete(user -> {
             if (user != null) {
-                RoutingContextUtil.success(ctx, WebUtil.data(user));
+                RoutingContextUtil.success(ctx, user);
             } else {
                 RoutingContextUtil.error(ctx, "账号密码错误");
             }

@@ -75,4 +75,8 @@ public class WebStarter {
         this.router.route(path).handler(requestHandler);
     }
 
+    public void errorHandler(int statusCode, Handler<RoutingContext> failureHandler) {
+        router.errorHandler(statusCode, failureHandler);
+    }
+
 }

@@ -1,7 +1,9 @@
 package com.zclcs.platform.system.service;
 
+import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.cache.UserCacheVo;
 import com.zclcs.platform.system.dao.entity.User;
+import com.zclcs.platform.system.dao.router.VueRouter;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -34,6 +36,14 @@ public interface UserService {
      * @return 用户权限
      */
     Future<List<String>> getUserPermissionCache(String username);
+
+    /**
+     * 根据用户名获取用户路由
+     *
+     * @param username 用户名
+     * @return 用户路由
+     */
+    Future<List<VueRouter<MenuCacheVo>>> getUserRouterCache(String username);
 
     /**
      * 删除用户相关缓存

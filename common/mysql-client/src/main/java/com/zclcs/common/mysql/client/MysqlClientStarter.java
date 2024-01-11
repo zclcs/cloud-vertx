@@ -39,7 +39,7 @@ public class MysqlClientStarter {
         String mysqlUser = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_USER"), config.getString("mysql.user"), "root");
         String mysqlPassword = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_PASSWORD"), config.getString("mysql.password"), "123456");
         String mysqlCharset = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_CHARSET"), config.getString("mysql.charset"), "utf8mb4");
-        String mysqlCollation = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_COLLATION"), config.getString("mysql.collation"), "utf8mb4_general_ci");
+        String mysqlCollation = StringsUtil.chooseOneIsNotBlank(env.getString("MYSQL_COLLATION"), config.getString("mysql.collation"), "utf8mb4_unicode_ci");
 
         MySQLConnectOptions connectOptions = new MySQLConnectOptions()
                 .setPort(Integer.parseInt(mysqlPort))

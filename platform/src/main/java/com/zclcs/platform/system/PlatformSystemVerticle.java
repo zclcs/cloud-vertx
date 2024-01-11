@@ -2,25 +2,22 @@ package com.zclcs.platform.system;
 
 import com.zclcs.cloud.core.bean.HttpWhiteList;
 import com.zclcs.cloud.lib.security.logic.RedisTokenLogic;
-import com.zclcs.cloud.lib.web.utils.WebUtil;
+import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.SecurityHandler;
 import com.zclcs.common.config.starter.ConfigStarter;
+import com.zclcs.common.config.utils.JsonUtil;
 import com.zclcs.common.core.constant.HttpStatus;
 import com.zclcs.common.mysql.client.MysqlClientStarter;
 import com.zclcs.common.redis.starter.RedisStarter;
 import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
-import com.zclcs.common.web.utils.RoutingContextUtil;
-import com.zclcs.platform.system.handler.LoginHandler;
-import com.zclcs.platform.system.handler.TestHandler;
-import com.zclcs.platform.system.handler.VerifyCodeHandler;
+import com.zclcs.platform.system.handler.*;
 import com.zclcs.platform.system.service.impl.UserServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.openapi.contract.OpenAPIContract;
 import io.vertx.openapi.validation.ValidatorException;
@@ -69,8 +66,13 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         log.info("isNativeTransportEnabled {}", vertx.isNativeTransportEnabled());
         ConfigStarter configStarter = new ConfigStarter(vertx);
         configStarter.setUpMapper();
-        initWhiteList();
         configStarter.env()
+                .andThen(jsonObject -> {
+                    initWhiteList().onComplete(whiteList::addAll, e -> {
+                        log.error("init white list error {}", e.getMessage(), e);
+                        vertx.close();
+                    });
+                })
                 .andThen(jsonObject -> {
                     env = jsonObject.result();
                     port = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
@@ -102,6 +104,10 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                             })
                             .andThen(redisConnection ->
                                     getContractFilePath()
+                                            .onFailure(e -> {
+                                                log.error("get contract file error {}", e.getMessage(), e);
+                                                vertx.close();
+                                            })
                                             .andThen(file -> {
                                                 JsonObject contractJson = file.result().toJsonObject();
                                                 OpenAPIContract.from(vertx, contractJson)
@@ -117,9 +123,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                                                                             ctx -> {
                                                                                 Throwable failure = ctx.failure();
                                                                                 if (failure instanceof ValidatorException validatorException) {
-                                                                                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_BAD_REQUEST, WebUtil.msg(validatorException.getMessage()));
+                                                                                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_BAD_REQUEST, validatorException.getMessage());
                                                                                 } else {
-                                                                                    RoutingContextUtil.error(ctx, WebUtil.msg("系统异常"));
+                                                                                    RoutingContextUtil.error(ctx, "系统异常");
                                                                                     log.error("系统异常 {}", failure.getMessage(), failure);
                                                                                 }
                                                                             })
@@ -158,23 +164,31 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
-        webStarter.addOpenApiRoute("code", new VerifyCodeHandler(redis));
-        webStarter.addOpenApiRoute("loginTokenByUsername", new LoginHandler(redis, config(), new UserServiceImpl(mysqlClient, redis), tokenProvider));
-        webStarter.addOpenApiRoute("test", new TestHandler(new UserServiceImpl(mysqlClient, redis)));
-        webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, WebUtil.msg("ok")));
+        webStarter.addOpenApiRoute("VerifyCodeHandler", new VerifyCodeHandler(redis));
+        UserServiceImpl userService = new UserServiceImpl(mysqlClient, redis);
+        webStarter.addOpenApiRoute("LoginByUsernameHandler", new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
+        webStarter.addOpenApiRoute("UserPermissionsHandler", new UserPermissionsHandler(userService));
+        webStarter.addOpenApiRoute("UserRoutersHandler", new UserRoutersHandler(userService));
+        webStarter.addOpenApiRoute("test", new TestHandler(userService));
+        webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, "ok"));
+        webStarter.errorHandler(404, (ctx) -> RoutingContextUtil.error(ctx, "接口未找到"));
     }
 
     private Future<Buffer> getContractFilePath() {
         return vertx.fileSystem().readFile("conf/openapi.json");
     }
 
-    private void initWhiteList() {
-        config().getJsonArray("whiteList").stream().forEach(item -> {
-            if (item instanceof JsonObject) {
-                HttpWhiteList httpWhiteList = Json.decodeValue(item.toString(), HttpWhiteList.class);
-                whiteList.add(httpWhiteList);
-            }
-        });
+    private Future<List<HttpWhiteList>> initWhiteList() {
+        String string = config().getString("whiteList");
+        if (string == null) {
+            return Future.succeededFuture();
+        }
+        try {
+            List<HttpWhiteList> httpWhiteLists = JsonUtil.readList(string, HttpWhiteList.class);
+            return Future.succeededFuture(httpWhiteLists);
+        } catch (Exception e) {
+            return Future.failedFuture(e);
+        }
     }
 
 }
