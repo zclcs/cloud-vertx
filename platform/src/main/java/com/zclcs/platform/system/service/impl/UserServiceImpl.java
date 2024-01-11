@@ -116,11 +116,11 @@ public class UserServiceImpl implements UserService {
                         return Future.succeededFuture(permissions);
                     } else {
                         return SqlTemplate.forQuery(dbClient, """
-                                        SELECT system_menu.perms FROM system_menu 
-                                        INNER JOIN system_role_menu ON system_menu.menu_id = system_role_menu.menu_id 
-                                        INNER JOIN system_role ON system_role_menu.role_id = system_role.role_id 
-                                        INNER JOIN system_user_role ON system_role.role_id = system_user_role.role_id 
-                                        INNER JOIN system_user ON system_user_role.user_id = system_user.user_id
+                                        SELECT distinct system_menu.perms FROM system_menu 
+                                            INNER JOIN system_role_menu ON system_menu.menu_id = system_role_menu.menu_id 
+                                            INNER JOIN system_role ON system_role_menu.role_id = system_role.role_id 
+                                            INNER JOIN system_user_role ON system_role.role_id = system_user_role.role_id 
+                                            INNER JOIN system_user ON system_user_role.user_id = system_user.user_id
                                         WHERE system_user.username = #{loginId} and system_menu.perms != ''
                                         """)
                                 .execute(Collections.singletonMap("loginId", username))
