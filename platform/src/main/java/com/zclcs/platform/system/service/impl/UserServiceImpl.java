@@ -154,7 +154,9 @@ public class UserServiceImpl implements UserService {
                             if (rv != null) {
                                 TypeReference<List<VueRouter<MenuCacheVo>>> typeReference = new TypeReference<>() {
                                 };
-                                return Future.succeededFuture(JsonUtil.readValue(rv.toString(), typeReference));
+                                List<VueRouter<MenuCacheVo>> vueRouters = JsonUtil.readValue(rv.toString(), typeReference);
+                                routerCache.put(userRouterPrefix, vueRouters);
+                                return Future.succeededFuture(vueRouters);
                             } else {
                                 return SqlTemplate.forQuery(dbClient, """
                                                 SELECT  system_menu.menu_id, 
