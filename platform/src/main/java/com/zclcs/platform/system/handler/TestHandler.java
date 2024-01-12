@@ -22,7 +22,7 @@ public class TestHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext ctx) {
         String username = ctx.request().getParam("username");
-        userService.getUserCache(username).onComplete(user -> {
+        userService.getUserPermissionCache(username).onComplete(user -> {
             if (user != null) {
                 RoutingContextUtil.success(ctx, user);
             } else {

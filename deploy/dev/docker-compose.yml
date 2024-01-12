@@ -94,6 +94,7 @@ services:
       # 设置时区
       TZ: Asia/Shanghai
       LANG: en_US.UTF-8
+      PLATFORM_SYSTEM_INSTANCES: 1
     volumes:
       - ./log/platform:/app/log
     healthcheck:

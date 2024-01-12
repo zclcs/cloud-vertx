@@ -41,18 +41,20 @@ public class SecurityHandler implements Handler<RoutingContext> {
         }
         String s = request.headers().get("Authorization");
         if (StringsUtil.isBlank(s)) {
-            RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "未鉴权");
+            RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "无权限");
         } else {
             String finalToken = s.replace("Bearer ", "");
             tokenProvider.verifyToken(finalToken).onComplete((data) -> {
-                String result = data.result();
-                if (result != null) {
-                    ctx.put(SecurityContext.LOGIN_ID, result);
+                if (data != null) {
+                    ctx.put(SecurityContext.LOGIN_ID, data);
                     ctx.put(SecurityContext.TOKEN, finalToken);
                     ctx.next();
                 } else {
                     RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
                 }
+            }, e -> {
+                log.error("token验证失败", e);
+                RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "无权限");
             });
         }
     }

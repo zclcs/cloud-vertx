@@ -25,6 +25,10 @@
     {
       "method": "GET",
       "path": "/test"
+    },
+    {
+      "method": "GET",
+      "path": "/health"
     }
   ]
 }

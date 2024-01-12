@@ -25,7 +25,7 @@ CMD java \
     -Dvertx.disableContextTimings=true                \
     -Dvertx.disableTCCL=true                          \
     -Dvertx.disableHttpHeadersValidation=true         \
-    -Dvertx.eventLoopPoolSize=$((`grep --count ^processor /proc/cpuinfo`)) \
+#    -Dvertx.eventLoopPoolSize=$((`grep --count ^processor /proc/cpuinfo`)) \
     -Dio.netty.buffer.checkBounds=false               \
     -Dio.netty.buffer.checkAccessible=false           \
     -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory \
@@ -34,8 +34,8 @@ CMD java \
     -Dlog4j2.discardThreshold=INFO                    \
     -jar                                              \
     $APP_FILE                                         \
-    --instances                                       \
-    `grep --count ^processor /proc/cpuinfo`           \
+#    --instances                                       \
+#    `grep --count ^processor /proc/cpuinfo`           \
     --conf                                            \
     $APP_CONF/config.json                             \
     --options                                         \
