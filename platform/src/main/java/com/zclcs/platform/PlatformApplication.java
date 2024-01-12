@@ -13,7 +13,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.SqlConnection;
+import io.vertx.sqlclient.SqlClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,25 +46,22 @@ public class PlatformApplication extends AbstractVerticle {
                 .andThen(jsonObject -> {
                     env = jsonObject.result();
                     MysqlClientStarter mysqlClientStarter = new MysqlClientStarter(vertx, env);
-                    Pool mysqlClient = mysqlClientStarter.createMysqlPool();
-                    mysqlClient.getConnection()
+                    Pool pool = mysqlClientStarter.createPool();
+                    SqlClient sqlClient = mysqlClientStarter.createSqlClient();
+                    pool.getConnection()
                             .onComplete(mysqlConnection -> {
                                 log.info("test connect mysql success");
-                                mysqlConnection.close();
                             }, e -> {
                                 log.error("connect mysql error {}", e.getMessage(), e);
                                 vertx.close();
                             })
-                            .andThen(dbConn -> {
-                                SqlConnection sqlConnection = dbConn.result();
-                                mysqlClientStarter.initDb(sqlConnection)
+                            .andThen(ar -> {
+                                mysqlClientStarter.initDb(ar.result())
                                         .onComplete(initDb -> {
                                             log.info("init mysql db success cost {} ms", (System.currentTimeMillis() - currentTimeMillis));
                                         }, e -> {
                                             log.error("init mysql db error {}", e.getMessage(), e);
                                             vertx.close();
-                                        })
-                                        .andThen(initDb -> {
                                         })
                                 ;
                                 RedisStarter redisStarter = new RedisStarter(vertx, env);
@@ -82,7 +79,7 @@ public class PlatformApplication extends AbstractVerticle {
                                                                 int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
                                                                 String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
                                                                 RedisAPI redis = RedisAPI.api(redisStarter.getClient());
-                                                                return new PlatformSystemVerticle(env, mysqlClient, redis, whiteList, platformSystemHttpPort, platformSystemHttpHost);
+                                                                return new PlatformSystemVerticle(env, sqlClient, redis, whiteList, platformSystemHttpPort, platformSystemHttpHost);
                                                             },
                                                             new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
                                                     .onComplete(s -> {

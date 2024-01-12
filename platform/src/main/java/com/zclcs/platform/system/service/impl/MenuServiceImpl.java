@@ -4,7 +4,7 @@ import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.entity.Menu;
 import com.zclcs.platform.system.service.MenuService;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.time.Duration;
@@ -13,19 +13,19 @@ import java.util.concurrent.Future;
 
 public class MenuServiceImpl implements MenuService {
 
-    private final Pool dbClient;
+    private final SqlClient sqlClient;
     private final RedisAPI redis;
 
     private final Duration redisMenuExpire = Duration.ofDays(1);
 
-    public MenuServiceImpl(Pool dbClient, RedisAPI redis) {
-        this.dbClient = dbClient;
+    public MenuServiceImpl(SqlClient sqlClient, RedisAPI redis) {
+        this.sqlClient = sqlClient;
         this.redis = redis;
     }
 
     @Override
     public Future<List<Menu>> getUserMenu(String username) {
-        SqlTemplate.forQuery(dbClient, """
+        SqlTemplate.forQuery(sqlClient, """
                 SELECT  system_menu.menu_id, 
                         system_menu.parent_code, 
                         system_menu.menu_name, 

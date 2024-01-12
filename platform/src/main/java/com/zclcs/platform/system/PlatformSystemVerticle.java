@@ -15,7 +15,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.openapi.contract.OpenAPIContract;
 import io.vertx.openapi.validation.ValidatorException;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.SqlClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final RedisAPI redis;
 
-    private final Pool mysqlClient;
+    private final SqlClient sqlClient;
 
     private final List<HttpWhiteList> whiteList;
 
@@ -44,9 +44,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final String httpHost;
 
-    public PlatformSystemVerticle(JsonObject env, Pool mysqlClient, RedisAPI redis, List<HttpWhiteList> whiteList, int httpPort, String httpHost) {
+    public PlatformSystemVerticle(JsonObject env, SqlClient sqlClient, RedisAPI redis, List<HttpWhiteList> whiteList, int httpPort, String httpHost) {
         this.env = env;
-        this.mysqlClient = mysqlClient;
+        this.sqlClient = sqlClient;
         this.redis = redis;
         this.whiteList = whiteList;
         this.httpPort = httpPort;
@@ -90,7 +90,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("VerifyCodeHandler", new VerifyCodeHandler(redis));
-        UserServiceImpl userService = new UserServiceImpl(mysqlClient, redis);
+        UserServiceImpl userService = new UserServiceImpl(sqlClient, redis);
         webStarter.addOpenApiRoute("LoginByUsernameHandler", new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
         webStarter.addOpenApiRoute("UserPermissionsHandler", new UserPermissionsHandler(userService));
         webStarter.addOpenApiRoute("UserRoutersHandler", new UserRoutersHandler(userService));

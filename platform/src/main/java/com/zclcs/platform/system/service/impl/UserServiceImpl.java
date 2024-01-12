@@ -18,7 +18,7 @@ import com.zclcs.platform.system.utils.RouterUtil;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.SqlClient;
 import io.vertx.sqlclient.templates.SqlTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +36,13 @@ public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    private final Pool dbClient;
+    private final SqlClient sqlClient;
     private final RedisAPI redis;
 
     private final Duration redisExpire = Duration.ofDays(1);
 
-    public UserServiceImpl(Pool dbClient, RedisAPI redis) {
-        this.dbClient = dbClient;
+    public UserServiceImpl(SqlClient sqlClient, RedisAPI redis) {
+        this.sqlClient = sqlClient;
         this.redis = redis;
     }
 
@@ -54,7 +54,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Future<User> getUser(String username) {
-        return SqlTemplate.forQuery(dbClient, """
+        return SqlTemplate.forQuery(sqlClient, """
                         SELECT * FROM system_user WHERE username = #{loginId}
                         """)
                 .mapTo(UserRowMapper.INSTANCE)
@@ -115,7 +115,7 @@ public class UserServiceImpl implements UserService {
                         permissionCache.put(k, permissions);
                         return Future.succeededFuture(permissions);
                     } else {
-                        return SqlTemplate.forQuery(dbClient, """
+                        return SqlTemplate.forQuery(sqlClient, """
                                         SELECT distinct system_menu.perms FROM system_menu 
                                             INNER JOIN system_role_menu ON system_menu.menu_id = system_role_menu.menu_id 
                                             INNER JOIN system_role ON system_role_menu.role_id = system_role.role_id 
@@ -158,7 +158,7 @@ public class UserServiceImpl implements UserService {
                                 routerCache.put(userRouterPrefix, vueRouters);
                                 return Future.succeededFuture(vueRouters);
                             } else {
-                                return SqlTemplate.forQuery(dbClient, """
+                                return SqlTemplate.forQuery(sqlClient, """
                                                 SELECT  system_menu.menu_id, 
                                                         system_menu.parent_code, 
                                                         system_menu.menu_name, 
