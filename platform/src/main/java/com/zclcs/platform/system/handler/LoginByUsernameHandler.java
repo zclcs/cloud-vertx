@@ -59,9 +59,9 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
         this.config = config;
         this.userService = userService;
         this.tokenProvider = tokenProvider;
-        decodePasswordKey = config.getString("login.decode.password.key");
-        checkVerifyCode = config.getBoolean("login.check.verify.code");
-        decodePassword = config.getBoolean("login.decode.password");
+        this.decodePasswordKey = config.getString("login.decode.password.key");
+        this.checkVerifyCode = config.getBoolean("login.check.verify.code");
+        this.decodePassword = config.getBoolean("login.decode.password");
     }
 
     @Override
@@ -104,7 +104,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
                             return;
                         }
                         try {
-                            String passwordPlainText = "";
+                            String passwordPlainText;
                             if (decodePassword) {
                                 passwordPlainText = new String(AESUtil.decryptCFB(Base64.getDecoder().decode(password),
                                         decodePasswordKey.getBytes(StandardCharsets.UTF_8),

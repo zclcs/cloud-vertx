@@ -50,11 +50,11 @@ public class SecurityHandler implements Handler<RoutingContext> {
                     ctx.put(SecurityContext.TOKEN, finalToken);
                     ctx.next();
                 } else {
-                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
+                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "token过期");
                 }
             }, e -> {
                 log.error("token验证失败", e);
-                RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "无权限");
+                RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
             });
         }
     }

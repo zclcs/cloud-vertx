@@ -1,6 +1,8 @@
 package com.zclcs.verify.code.starter;
 
 import com.zclcs.verify.code.starter.base.VerifyCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -12,7 +14,9 @@ import java.io.OutputStream;
  * @author zclcs
  */
 public class SpecVerifyCode extends VerifyCode {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(SpecVerifyCode.class.getName());
+
     public SpecVerifyCode() {
     }
 
@@ -66,15 +70,14 @@ public class SpecVerifyCode extends VerifyCode {
             g2d.dispose();
             ImageIO.write(bi, "png", out);
             out.flush();
-            boolean var20 = true;
-            return var20;
+            return true;
         } catch (IOException var18) {
-            var18.printStackTrace();
+            log.error("验证码生成失败", var18);
         } finally {
             try {
                 out.close();
             } catch (IOException var17) {
-                var17.printStackTrace();
+                log.error("验证码生成失败", var17);
             }
 
         }
