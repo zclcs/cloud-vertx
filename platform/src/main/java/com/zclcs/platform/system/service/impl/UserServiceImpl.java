@@ -1,6 +1,8 @@
 package com.zclcs.platform.system.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.zclcs.cloud.core.base.Page;
+import com.zclcs.cloud.core.base.PageAo;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.cloud.core.constant.YesOrNo;
 import com.zclcs.common.config.utils.JsonUtil;
@@ -13,6 +15,7 @@ import com.zclcs.platform.system.dao.entity.User;
 import com.zclcs.platform.system.dao.entity.UserRowMapper;
 import com.zclcs.platform.system.dao.router.RouterMeta;
 import com.zclcs.platform.system.dao.router.VueRouter;
+import com.zclcs.platform.system.dao.vo.UserVo;
 import com.zclcs.platform.system.service.UserService;
 import com.zclcs.platform.system.utils.RouterUtil;
 import io.vertx.core.Future;
@@ -24,10 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author zclcs
@@ -229,6 +229,56 @@ public class UserServiceImpl implements UserService {
                         String.format(RedisPrefix.USER_ROUTER_PREFIX, username)
                 ))
                 .map(v -> true);
+    }
+
+    @Override
+    public Future<Page<UserVo>> getUserPage(UserVo userVo, PageAo pageAo) {
+        Long pageNum = pageAo.getPageNum();
+        Long pageSize = pageAo.getPageSize();
+        String sql = """
+                SELECT user_id, 
+                            username, 
+                            real_name, 
+                            password, 
+                            dept_id, 
+                            email, 
+                            mobile, 
+                            status, 
+                            last_login_time, 
+                            gender, is_tab, 
+                            theme, 
+                            avatar, 
+                            description, 
+                            create_at
+                            FROM system_user 
+                            where 1=1
+                """;
+        if (StringsUtil.isNotBlank(userVo.getUsername())) {
+            sql += " username = #{username} ";
+        }
+        sql += " limit #{pageNum}, #{pageSize}";
+        Map<String, Object> params = new HashMap<>();
+        if (StringsUtil.isNotBlank(userVo.getUsername())) {
+            params.put("username", userVo.getUsername());
+        }
+        params.put("pageNum", pageNum);
+        params.put("pageSize", pageSize);
+        return SqlTemplate.forQuery(sqlClient, sql)
+                .mapTo(UserRowMapper.INSTANCE)
+                .execute(params)
+                .map(rows -> {
+                    if (rows != null && rows.size() > 0) {
+                        List<UserVo> list = new ArrayList<>();
+                        rows.forEach(user -> {
+                            UserVo vo = new UserVo(user);
+                            list.add(vo);
+                        });
+                        return new Page<>(pageNum, pageSize, (long) rows.size(), list);
+                    } else {
+                        return new Page<>(pageNum, pageSize);
+                    }
+                })
+                ;
     }
 
 

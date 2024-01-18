@@ -7,12 +7,6 @@ import io.vertx.core.Future;
  */
 public interface PermissionProvider {
 
-    Future<Boolean> hasPermission(String loginId, String loginType, String permission);
-
-    Future<Boolean> hasAnyPermission(String loginId, String loginType, String... permissions);
-
-    Future<Boolean> hasRole(String loginId, String loginType, String role);
-
-    Future<Boolean> hasAnyRole(String loginId, String loginType, String... roles);
+    Future<Boolean> hasPermission(String loginId, String loginType);
 
 }

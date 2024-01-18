@@ -6,6 +6,9 @@ import com.zclcs.platform.system.service.UserService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * @author zclcs
+ */
 public class UserPermissionsHandler implements Handler<RoutingContext> {
 
 

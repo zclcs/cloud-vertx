@@ -83,6 +83,34 @@ paths:
       responses:
         '200':
           description: 路由合集
+  /user:
+    get:
+      summary: 用户
+      operationId: UserPageHandler
+      tags:
+        - 用户
+      parameters:
+        - name: pageSize
+          in: query
+          description: 页数
+          required: true
+          schema:
+            type: string
+        - name: pageNum
+          in: query
+          description: 页码
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: query
+          description: 用户名
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 用户集合
   /test:
     get:
       security: [ ]

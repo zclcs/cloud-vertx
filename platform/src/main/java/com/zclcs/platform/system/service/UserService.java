@@ -1,9 +1,12 @@
 package com.zclcs.platform.system.service;
 
+import com.zclcs.cloud.core.base.Page;
+import com.zclcs.cloud.core.base.PageAo;
 import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.cache.UserCacheVo;
 import com.zclcs.platform.system.dao.entity.User;
 import com.zclcs.platform.system.dao.router.VueRouter;
+import com.zclcs.platform.system.dao.vo.UserVo;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -52,5 +55,7 @@ public interface UserService {
      * @return 成功
      */
     Future<Boolean> deleteUserRelatedCache(String username);
+
+    Future<Page<UserVo>> getUserPage(UserVo userVo, PageAo pageAo);
 
 }
