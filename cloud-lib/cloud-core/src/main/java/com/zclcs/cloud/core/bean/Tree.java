@@ -36,6 +36,11 @@ public class Tree<T> implements Serializable {
     private String label;
 
     /**
+     * 其他数据
+     */
+    private T extra;
+
+    /**
      * 子级
      */
     private List<Tree<T>> children;
@@ -108,5 +113,13 @@ public class Tree<T> implements Serializable {
 
     public void setHasChildren(boolean hasChildren) {
         this.hasChildren = hasChildren;
+    }
+
+    public T getExtra() {
+        return extra;
+    }
+
+    public void setExtra(T extra) {
+        this.extra = extra;
     }
 }

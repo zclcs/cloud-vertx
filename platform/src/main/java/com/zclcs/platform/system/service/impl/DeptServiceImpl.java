@@ -1,8 +1,10 @@
 package com.zclcs.platform.system.service.impl;
 
 import com.zclcs.cloud.core.bean.Tree;
+import com.zclcs.cloud.core.constant.CommonCore;
 import com.zclcs.cloud.core.utils.TreeUtil;
 import com.zclcs.common.core.utils.StringsUtil;
+import com.zclcs.platform.system.dao.vo.DeptTreeVo;
 import com.zclcs.platform.system.dao.vo.DeptVo;
 import com.zclcs.platform.system.dao.vo.DeptVoRowMapper;
 import com.zclcs.platform.system.service.DeptService;
@@ -52,25 +54,31 @@ public class DeptServiceImpl implements DeptService {
     }
 
     @Override
-    public Future<List<Tree<DeptVo>>> getDeptTree(DeptVo deptVo) {
+    public Future<List<Tree<DeptTreeVo>>> getDeptTree(DeptVo deptVo) {
         String condition = getDeptVoCondition(deptVo);
         return SqlTemplate.forQuery(sqlClient, getDeptVoSql(condition))
                 .mapTo(DeptVoRowMapper.INSTANCE)
                 .execute(deptVo.toMap())
                 .flatMap(rows -> {
-                    List<Tree<DeptVo>> deptTreeList = new ArrayList<>();
+                    List<Tree<DeptTreeVo>> deptTreeVoList = new ArrayList<>();
                     rows.forEach(row -> {
-                        Tree<DeptVo> deptVoTree = new Tree<>();
-                        deptVoTree.setId(row.getDeptId());
-                        deptVoTree.setCode(row.getDeptCode());
-                        deptVoTree.setParentCode(row.getParentCode());
-                        deptVoTree.setLabel(row.getDeptName());
-                        deptTreeList.add(deptVoTree);
+                        Tree<DeptTreeVo> deptTreeVo = new Tree<>();
+                        deptTreeVo.setId(row.getDeptId());
+                        deptTreeVo.setCode(row.getDeptCode());
+                        deptTreeVo.setParentCode(row.getParentCode());
+                        deptTreeVo.setLabel(row.getDeptName());
+                        DeptTreeVo extra = new DeptTreeVo();
+                        extra.setCreateAt(row.getCreateAt());
+                        extra.setOrderNum(row.getOrderNum());
+                        extra.setHarPar(!row.getParentCode().equals(CommonCore.TOP_PARENT_CODE));
+                        extra.setDeptName(row.getDeptName());
+                        deptTreeVo.setExtra(extra);
+                        deptTreeVoList.add(deptTreeVo);
                     });
                     if (StringsUtil.isNotBlank(condition)) {
-                        return Future.succeededFuture(deptTreeList);
+                        return Future.succeededFuture(deptTreeVoList);
                     }
-                    return Future.succeededFuture(TreeUtil.build(deptTreeList));
+                    return Future.succeededFuture(TreeUtil.build(deptTreeVoList));
                 })
                 ;
     }

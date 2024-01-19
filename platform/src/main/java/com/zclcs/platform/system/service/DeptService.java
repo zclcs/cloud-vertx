@@ -1,6 +1,7 @@
 package com.zclcs.platform.system.service;
 
 import com.zclcs.cloud.core.bean.Tree;
+import com.zclcs.platform.system.dao.vo.DeptTreeVo;
 import com.zclcs.platform.system.dao.vo.DeptVo;
 import io.vertx.core.Future;
 
@@ -25,5 +26,5 @@ public interface DeptService {
      * @param deptVo 部门信息
      * @return 部门树
      */
-    Future<List<Tree<DeptVo>>> getDeptTree(DeptVo deptVo);
+    Future<List<Tree<DeptTreeVo>>> getDeptTree(DeptVo deptVo);
 }
