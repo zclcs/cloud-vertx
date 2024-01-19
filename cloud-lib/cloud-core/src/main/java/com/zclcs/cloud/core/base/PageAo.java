@@ -11,20 +11,22 @@ public class PageAo {
      * 页码
      * 默认：1
      */
-    private Long pageNum = 1L;
+    private Long pageNum;
 
     /**
      * 页数
      * 默认：10
      */
-    private Long pageSize = 10L;
+    private Long pageSize;
 
     public PageAo() {
+        this.pageNum = 1L;
+        this.pageSize = 10L;
     }
 
     public PageAo(Long pageNum, Long pageSize) {
-        this.pageNum = pageNum;
-        this.pageSize = pageSize;
+        this.pageNum = pageNum == null ? 1L : pageNum;
+        this.pageSize = pageSize == null ? 10L : pageSize;
     }
 
     public Long getPageNum() {
@@ -41,5 +43,13 @@ public class PageAo {
 
     public void setPageSize(Long pageSize) {
         this.pageSize = pageSize;
+    }
+
+    public Long getSqlQueryStart() {
+        return (pageNum - 1) * pageSize;
+    }
+
+    public Long getSqlQueryEnd() {
+        return pageSize;
     }
 }

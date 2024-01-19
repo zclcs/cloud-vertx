@@ -24,6 +24,7 @@ paths:
           required: true
           schema:
             type: string
+          allowEmptyValue: false
       responses:
         '200':
           description: 成功
@@ -85,7 +86,7 @@ paths:
           description: 路由合集
   /user:
     get:
-      summary: 用户
+      summary: 查询用户（分页）
       operationId: UserPageHandler
       tags:
         - 用户
@@ -95,13 +96,15 @@ paths:
           description: 页数
           required: true
           schema:
-            type: string
+            type: integer
+            nullable: false
         - name: pageNum
           in: query
           description: 页码
           required: true
           schema:
-            type: string
+            type: integer
+            nullable: false
         - name: username
           in: query
           description: 用户名
@@ -111,6 +114,22 @@ paths:
       responses:
         '200':
           description: 用户集合
+  /dept/tree:
+    get:
+      summary: 获取部门树
+      operationId: DeptTreeHandler
+      tags:
+        - 部门
+      parameters:
+        - name: deptName
+          in: query
+          description: 部门名称
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 部门树
   /test:
     get:
       security: [ ]
@@ -128,10 +147,6 @@ paths:
       responses:
         '200':
           description: A paged array of pets
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginByUsernameHandlerVo'
 components:
   securitySchemes:
     bearerAuth: # arbitrary name for the security scheme

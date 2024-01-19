@@ -2,12 +2,18 @@ package com.zclcs.platform.system.dao.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
-import com.zclcs.platform.system.dao.entity.User;
+import com.zclcs.common.core.constant.StringPool;
+import com.zclcs.common.core.utils.StringsUtil;
+import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.format.SnakeCase;
+import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户 Vo
@@ -15,6 +21,8 @@ import java.util.List;
  * @author zclcs
  * @since 2023-09-01 19:55:21.249
  */
+@DataObject
+@RowMapped(formatter = SnakeCase.class)
 public class UserVo extends BaseEntity implements Serializable {
 
     @Serial
@@ -126,9 +134,19 @@ public class UserVo extends BaseEntity implements Serializable {
     private List<Long> roleIds;
 
     /**
+     * 用户角色名称集合String
+     */
+    private String roleIdString;
+
+    /**
      * 数据权限id集合
      */
     private List<Long> deptIds;
+
+    /**
+     * 数据权限id集合String
+     */
+    private String deptIdString;
 
     /**
      * 用户角色名称集合
@@ -140,32 +158,8 @@ public class UserVo extends BaseEntity implements Serializable {
      */
     private String roleNameString;
 
-    /**
-     * 用户权限集合
-     */
-    private List<String> permissions;
-
 
     public UserVo() {
-    }
-
-    public UserVo(User user) {
-        if (user != null) {
-            this.userId = user.getUserId();
-            this.username = user.getUsername();
-            this.realName = user.getRealName();
-            this.password = user.getPassword();
-            this.deptId = user.getDeptId();
-            this.email = user.getEmail();
-            this.mobile = user.getMobile();
-            this.status = user.getStatus();
-            this.lastLoginTime = user.getLastLoginTime();
-            this.gender = user.getGender();
-            this.theme = user.getTheme();
-            this.avatar = user.getAvatar();
-            this.description = user.getDescription();
-            this.isTab = user.getIsTab();
-        }
     }
 
     public Long getUserId() {
@@ -312,12 +306,34 @@ public class UserVo extends BaseEntity implements Serializable {
         this.roleIds = roleIds;
     }
 
+    public String getRoleIdString() {
+        return roleIdString;
+    }
+
+    public void setRoleIdString(String roleIdString) {
+        this.roleIdString = roleIdString;
+        if (StringsUtil.isNotBlank(roleIdString)) {
+            this.roleIds = Arrays.stream(roleIdString.split(StringPool.COMMA)).map(Long::valueOf).collect(Collectors.toList());
+        }
+    }
+
     public List<Long> getDeptIds() {
         return deptIds;
     }
 
     public void setDeptIds(List<Long> deptIds) {
         this.deptIds = deptIds;
+    }
+
+    public String getDeptIdString() {
+        return deptIdString;
+    }
+
+    public void setDeptIdString(String deptIdString) {
+        this.deptIdString = deptIdString;
+        if (StringsUtil.isNotBlank(deptIdString)) {
+            this.deptIds = Arrays.stream(deptIdString.split(StringPool.COMMA)).map(Long::valueOf).collect(Collectors.toList());
+        }
     }
 
     public List<String> getRoleNames() {
@@ -334,13 +350,8 @@ public class UserVo extends BaseEntity implements Serializable {
 
     public void setRoleNameString(String roleNameString) {
         this.roleNameString = roleNameString;
-    }
-
-    public List<String> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(List<String> permissions) {
-        this.permissions = permissions;
+        if (StringsUtil.isNotBlank(roleNameString)) {
+            this.roleNames = Arrays.stream(roleNameString.split(StringPool.COMMA)).collect(Collectors.toList());
+        }
     }
 }

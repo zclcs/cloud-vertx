@@ -56,6 +56,13 @@ public interface UserService {
      */
     Future<Boolean> deleteUserRelatedCache(String username);
 
+    /**
+     * 获取用户分页
+     *
+     * @param userVo 用户信息
+     * @param pageAo 分页信息
+     * @return 用户分页
+     */
     Future<Page<UserVo>> getUserPage(UserVo userVo, PageAo pageAo);
 
 }

@@ -10,6 +10,11 @@ import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.platform.system.handler.*;
 import com.zclcs.platform.system.security.HasPermissionLogic;
+import com.zclcs.platform.system.service.DeptService;
+import com.zclcs.platform.system.service.RoleService;
+import com.zclcs.platform.system.service.UserService;
+import com.zclcs.platform.system.service.impl.DeptServiceImpl;
+import com.zclcs.platform.system.service.impl.RoleServiceImpl;
 import com.zclcs.platform.system.service.impl.UserServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
@@ -92,12 +97,15 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     private void initRoute(WebStarter webStarter) {
         webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("VerifyCodeHandler", new VerifyCodeHandler(redis));
-        UserServiceImpl userService = new UserServiceImpl(sqlClient, redis);
+        RoleService roleService = new RoleServiceImpl(sqlClient);
+        DeptService deptService = new DeptServiceImpl(sqlClient);
+        UserService userService = new UserServiceImpl(roleService, sqlClient, redis);
         PermissionProvider hasPermissionLogic = new HasPermissionLogic("user:view", userService);
         webStarter.addOpenApiRoute("LoginByUsernameHandler", new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
         webStarter.addOpenApiRoute("UserPermissionsHandler", new UserPermissionsHandler(userService));
         webStarter.addOpenApiRoute("UserRoutersHandler", new UserRoutersHandler(userService));
         webStarter.addOpenApiRoute("UserPageHandler", new UserPageHandler(hasPermissionLogic, userService));
+        webStarter.addOpenApiRoute("DeptTreeHandler", new DeptTreeHandler(hasPermissionLogic, deptService));
         webStarter.addOpenApiRoute("test", new TestHandler(userService));
         webStarter.addRoute(HttpMethod.GET, "/health", ctx -> RoutingContextUtil.success(ctx, "ok"));
         webStarter.errorHandler(404, (ctx) -> RoutingContextUtil.error(ctx, "接口未找到"));

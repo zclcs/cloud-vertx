@@ -36,7 +36,7 @@ public class Page<T> {
     protected Long pages;
 
     public Page() {
-        this(1L, 10L, 0L);
+        this(1L, 10L);
     }
 
     public Page(long pageNum, long pageSize) {
@@ -55,23 +55,43 @@ public class Page<T> {
         this.list = list;
     }
 
-    public void setTotal(Long total) {
-        this.total = total;
-    }
-
-    public void setPages(Long pages) {
-        this.pages = pages;
+    public List<T> getList() {
+        return list;
     }
 
     public void setList(List<T> list) {
         this.list = list;
     }
 
+    public Long getTotal() {
+        return total;
+    }
+
+    public void setTotal(Long total) {
+        this.total = total;
+    }
+
+    public Long getPageSize() {
+        return pageSize;
+    }
+
     public void setPageSize(Long pageSize) {
         this.pageSize = pageSize;
     }
 
+    public Long getPageNum() {
+        return pageNum;
+    }
+
     public void setPageNum(Long pageNum) {
         this.pageNum = pageNum;
+    }
+
+    public Long getPages() {
+        return pages;
+    }
+
+    public void setPages(Long pages) {
+        this.pages = pages;
     }
 }

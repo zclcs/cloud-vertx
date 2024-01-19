@@ -16,6 +16,8 @@ import com.zclcs.platform.system.dao.entity.UserRowMapper;
 import com.zclcs.platform.system.dao.router.RouterMeta;
 import com.zclcs.platform.system.dao.router.VueRouter;
 import com.zclcs.platform.system.dao.vo.UserVo;
+import com.zclcs.platform.system.dao.vo.UserVoRowMapper;
+import com.zclcs.platform.system.service.RoleService;
 import com.zclcs.platform.system.service.UserService;
 import com.zclcs.platform.system.utils.RouterUtil;
 import io.vertx.core.Future;
@@ -34,14 +36,16 @@ import java.util.*;
  */
 public class UserServiceImpl implements UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
+    private final RoleService roleService;
     private final SqlClient sqlClient;
     private final RedisAPI redis;
 
     private final Duration redisExpire = Duration.ofDays(1);
 
-    public UserServiceImpl(SqlClient sqlClient, RedisAPI redis) {
+    public UserServiceImpl(RoleService roleService, SqlClient sqlClient, RedisAPI redis) {
+        this.roleService = roleService;
         this.sqlClient = sqlClient;
         this.redis = redis;
     }
@@ -59,12 +63,12 @@ public class UserServiceImpl implements UserService {
                         """)
                 .mapTo(UserRowMapper.INSTANCE)
                 .execute(Collections.singletonMap("loginId", username))
-                .map(rs -> {
+                .flatMap(rs -> {
+                    User user = null;
                     if (rs.iterator().hasNext()) {
-                        return rs.iterator().next();
-                    } else {
-                        return null;
+                        user = rs.iterator().next();
                     }
+                    return Future.succeededFuture(user);
                 });
     }
 
@@ -124,12 +128,12 @@ public class UserServiceImpl implements UserService {
                                         WHERE system_user.username = #{loginId} and system_menu.perms != ''
                                         """)
                                 .execute(Collections.singletonMap("loginId", username))
-                                .map(rs -> {
+                                .flatMap(rs -> {
                                     List<String> permissions = new ArrayList<>();
                                     rs.forEach(row -> {
                                         permissions.add(row.getString(0));
                                     });
-                                    return permissions;
+                                    return Future.succeededFuture(permissions);
                                 })
                                 .compose(dv -> {
                                     String expireTime = String.valueOf(redisExpire.getSeconds() + new Random().nextLong(100) + 1L);
@@ -185,7 +189,7 @@ public class UserServiceImpl implements UserService {
                                                 """)
                                         .mapTo(MenuRowMapper.INSTANCE)
                                         .execute(Collections.singletonMap("loginId", username))
-                                        .map(rows -> {
+                                        .flatMap(rows -> {
                                             List<VueRouter<MenuCacheVo>> vueRouters = new ArrayList<>();
                                             rows.forEach(menu -> {
                                                 VueRouter<MenuCacheVo> route = new VueRouter<>();
@@ -206,7 +210,7 @@ public class UserServiceImpl implements UserService {
                                                         menu.getCurrentActiveMenu()));
                                                 vueRouters.add(route);
                                             });
-                                            return RouterUtil.buildVueRouter(vueRouters);
+                                            return Future.succeededFuture(RouterUtil.buildVueRouter(vueRouters));
                                         })
                                         .compose(dv -> {
                                             String expireTime = String.valueOf(redisExpire.getSeconds() + new Random().nextLong(100) + 1L);
@@ -235,50 +239,81 @@ public class UserServiceImpl implements UserService {
     public Future<Page<UserVo>> getUserPage(UserVo userVo, PageAo pageAo) {
         Long pageNum = pageAo.getPageNum();
         Long pageSize = pageAo.getPageSize();
-        String sql = """
-                SELECT user_id, 
-                            username, 
-                            real_name, 
-                            password, 
-                            dept_id, 
-                            email, 
-                            mobile, 
-                            status, 
-                            last_login_time, 
-                            gender, is_tab, 
-                            theme, 
-                            avatar, 
-                            description, 
-                            create_at
-                            FROM system_user 
-                            where 1=1
-                """;
-        if (StringsUtil.isNotBlank(userVo.getUsername())) {
-            sql += " username = #{username} ";
-        }
-        sql += " limit #{pageNum}, #{pageSize}";
-        Map<String, Object> params = new HashMap<>();
+        Long sqlQueryStart = pageAo.getSqlQueryStart();
+        Long sqlQueryEnd = pageAo.getSqlQueryEnd();
+        String sql = getUserPageSql(userVo);
+        Map<String, Object> params = new HashMap<>(10);
         if (StringsUtil.isNotBlank(userVo.getUsername())) {
             params.put("username", userVo.getUsername());
         }
-        params.put("pageNum", pageNum);
-        params.put("pageSize", pageSize);
+        params.put("sqlQueryStart", sqlQueryStart);
+        params.put("sqlQueryEnd", sqlQueryEnd);
         return SqlTemplate.forQuery(sqlClient, sql)
-                .mapTo(UserRowMapper.INSTANCE)
+                .mapTo(UserVoRowMapper.INSTANCE)
                 .execute(params)
-                .map(rows -> {
+                .flatMap(rows -> {
                     if (rows != null && rows.size() > 0) {
                         List<UserVo> list = new ArrayList<>();
-                        rows.forEach(user -> {
-                            UserVo vo = new UserVo(user);
-                            list.add(vo);
-                        });
-                        return new Page<>(pageNum, pageSize, (long) rows.size(), list);
-                    } else {
-                        return new Page<>(pageNum, pageSize);
+                        rows.forEach(list::add);
+                        return Future.succeededFuture(new Page<>(pageNum, pageSize, (long) rows.size(), list));
                     }
+                    return Future.succeededFuture(new Page<>(pageNum, pageSize));
                 })
                 ;
+    }
+
+
+    private String getUserPageSql(UserVo userVo) {
+        String sql = """
+                SELECT
+                	su.user_id,
+                	su.username,
+                	su.real_name,
+                	su.PASSWORD,
+                	su.dept_id,
+                	su.email,
+                	su.mobile,
+                	su.STATUS,
+                	su.last_login_time,
+                	su.gender,
+                	su.is_tab,
+                	su.theme,
+                	su.avatar,
+                	su.description,
+                	GROUP_CONCAT( distinct sr.role_id ) role_id_string,
+                	GROUP_CONCAT( distinct sr.role_name ) role_name_string,
+                	GROUP_CONCAT( distinct sudp.dept_id ) dept_id_string
+                FROM
+                	system_user su
+                	LEFT JOIN system_user_role sur ON su.user_id = sur.user_id
+                	LEFT JOIN system_role sr ON sur.role_id = sr.role_id
+                	LEFT JOIN system_user_data_permission sudp ON su.user_id = sudp.user_id
+                WHERE
+                	1 = 1
+                	%s
+                GROUP BY
+                	su.user_id,
+                	su.username,
+                	su.real_name,
+                	su.PASSWORD,
+                	su.dept_id,
+                	su.email,
+                	su.mobile,
+                	su.STATUS,
+                	su.last_login_time,
+                	su.gender,
+                	su.is_tab,
+                	su.theme,
+                	su.avatar,
+                	su.description
+                """;
+        String condition = "";
+        if (StringsUtil.isNotBlank(userVo.getUsername())) {
+            condition += " and username like concat('%', #{username}, '%') ";
+        }
+        sql = String.format(sql, condition);
+        sql += " limit #{sqlQueryStart}, #{sqlQueryEnd}";
+        return sql;
     }
 
 
