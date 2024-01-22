@@ -1,10 +1,14 @@
 package com.zclcs.platform.system;
 
+import com.zclcs.cloud.core.bean.HttpBlackList;
+import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.cloud.core.bean.HttpWhiteList;
 import com.zclcs.cloud.lib.security.logic.RedisTokenLogic;
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.GlobalHandler;
 import com.zclcs.common.core.constant.HttpStatus;
+import com.zclcs.common.redis.starter.rate.limit.RateLimiterClient;
+import com.zclcs.common.redis.starter.rate.limit.impl.DefaultRateLimiterClient;
 import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
@@ -39,11 +43,17 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final TokenProvider tokenProvider;
 
+    private final RateLimiterClient rateLimiterClient;
+
     private final RedisAPI redis;
 
     private final SqlClient sqlClient;
 
     private final List<HttpWhiteList> whiteList;
+
+    private final List<HttpRateLimitList> rateLimitList;
+
+    private final List<HttpBlackList> blackList;
 
     private final JsonObject env;
 
@@ -51,14 +61,17 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final String httpHost;
 
-    public PlatformSystemVerticle(JsonObject env, SqlClient sqlClient, RedisAPI redis, List<HttpWhiteList> whiteList, int httpPort, String httpHost) {
+    public PlatformSystemVerticle(JsonObject env, SqlClient sqlClient, RedisAPI redis, List<HttpWhiteList> whiteList, List<HttpRateLimitList> rateLimitList, List<HttpBlackList> blackList, int httpPort, String httpHost) {
         this.env = env;
         this.sqlClient = sqlClient;
         this.redis = redis;
         this.whiteList = whiteList;
+        this.rateLimitList = rateLimitList;
+        this.blackList = blackList;
         this.httpPort = httpPort;
         this.httpHost = httpHost;
         this.tokenProvider = new RedisTokenLogic(redis);
+        this.rateLimiterClient = new DefaultRateLimiterClient(vertx, redis);
     }
 
     @Override
@@ -95,7 +108,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     }
 
     private void initRoute(WebStarter webStarter) {
-        webStarter.addRoute("/*", new GlobalHandler(whiteList, tokenProvider));
+        webStarter.addRoute("/*", new GlobalHandler(whiteList, rateLimitList, blackList, tokenProvider, rateLimiterClient));
         webStarter.addOpenApiRoute("VerifyCodeHandler", new VerifyCodeHandler(redis));
         RoleService roleService = new RoleServiceImpl(sqlClient);
         DeptService deptService = new DeptServiceImpl(sqlClient);

@@ -1,5 +1,7 @@
 package com.zclcs.platform;
 
+import com.zclcs.cloud.core.bean.HttpBlackList;
+import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.cloud.core.bean.HttpWhiteList;
 import com.zclcs.common.config.starter.ConfigStarter;
 import com.zclcs.common.config.utils.JsonUtil;
@@ -28,6 +30,10 @@ public class PlatformApplication extends AbstractVerticle {
     private static final Logger log = LoggerFactory.getLogger(PlatformApplication.class);
 
     private final List<HttpWhiteList> whiteList = new ArrayList<>();
+
+    private final List<HttpRateLimitList> rateLimitList = new ArrayList<>();
+
+    private final List<HttpBlackList> blackList = new ArrayList<>();
 
     private JsonObject env;
 
@@ -79,7 +85,7 @@ public class PlatformApplication extends AbstractVerticle {
                                                                 int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
                                                                 String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
                                                                 RedisAPI redis = RedisAPI.api(redisStarter.getClient());
-                                                                return new PlatformSystemVerticle(env, sqlClient, redis, whiteList, platformSystemHttpPort, platformSystemHttpHost);
+                                                                return new PlatformSystemVerticle(env, sqlClient, redis, whiteList, rateLimitList, blackList, platformSystemHttpPort, platformSystemHttpHost);
                                                             },
                                                             new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
                                                     .onComplete(s -> {

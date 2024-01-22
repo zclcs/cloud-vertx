@@ -1,5 +1,6 @@
 package com.zclcs.cloud.security;
 
+import com.zclcs.cloud.core.bean.HttpBlackList;
 import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.cloud.core.bean.HttpWhiteList;
 import com.zclcs.cloud.core.constant.RedisPrefix;
@@ -28,12 +29,14 @@ public class GlobalHandler implements Handler<RoutingContext> {
     private final Logger log = LoggerFactory.getLogger(GlobalHandler.class.getName());
     private final List<HttpWhiteList> whiteList;
     private final List<HttpRateLimitList> rateLimitList;
+    private final List<HttpBlackList> blackList;
     private final TokenProvider tokenProvider;
     private final RateLimiterClient rateLimiterClient;
 
-    public GlobalHandler(List<HttpWhiteList> whiteList, List<HttpRateLimitList> rateLimitList, TokenProvider tokenProvider, RateLimiterClient rateLimiterClient) {
+    public GlobalHandler(List<HttpWhiteList> whiteList, List<HttpRateLimitList> rateLimitList, List<HttpBlackList> blackList, TokenProvider tokenProvider, RateLimiterClient rateLimiterClient) {
         this.whiteList = whiteList;
         this.rateLimitList = rateLimitList;
+        this.blackList = blackList;
         this.tokenProvider = tokenProvider;
         this.rateLimiterClient = rateLimiterClient;
     }
@@ -43,6 +46,20 @@ public class GlobalHandler implements Handler<RoutingContext> {
         HttpServerRequest request = ctx.request();
         HttpMethod method = request.method();
         String path = request.path();
+
+        for (HttpBlackList blackList : blackList) {
+            if (method.name().equalsIgnoreCase(blackList.getMethod().name()) && path.equals(blackList.getPath())) {
+                LocalDateTime limitFrom = LocalDateTime.parse(blackList.getLimitFrom(), DatePattern.TIME_FORMATTER);
+                LocalDateTime limitTo = LocalDateTime.parse(blackList.getLimitTo(), DatePattern.TIME_FORMATTER);
+                LocalDateTime now = LocalDateTime.now();
+                if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
+                    String ip = RoutingContextUtil.getHttpRequestIpAddress(ctx);
+                    if (ip.equals(blackList.getIp())) {
+                        RoutingContextUtil.error(ctx, HttpStatus.HTTP_FORBIDDEN, "IP被封禁");
+                    }
+                }
+            }
+        }
 
         for (HttpRateLimitList rateLimit : rateLimitList) {
             if (method.name().equalsIgnoreCase(method.name()) && path.equals(rateLimit.getPath())) {
@@ -60,6 +77,7 @@ public class GlobalHandler implements Handler<RoutingContext> {
                 }
             }
         }
+
         for (HttpWhiteList whiteList : whiteList) {
             if (method.name().equalsIgnoreCase(method.name()) && path.equals(whiteList.getPath())) {
                 ctx.next();
