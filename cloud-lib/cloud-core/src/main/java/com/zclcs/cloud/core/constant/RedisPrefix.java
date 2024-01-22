@@ -12,4 +12,6 @@ public class RedisPrefix {
 
     public static final String USER_ROUTER_PREFIX = "user:router:%s";
 
+    public static final String RATE_LIMIT_PREFIX = "rate:limit:%s:%s:%s";
+
 }

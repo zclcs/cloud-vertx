@@ -3,7 +3,7 @@ package com.zclcs.platform.system;
 import com.zclcs.cloud.core.bean.HttpWhiteList;
 import com.zclcs.cloud.lib.security.logic.RedisTokenLogic;
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
-import com.zclcs.cloud.security.SecurityHandler;
+import com.zclcs.cloud.security.GlobalHandler;
 import com.zclcs.common.core.constant.HttpStatus;
 import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.common.security.provider.TokenProvider;
@@ -95,7 +95,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     }
 
     private void initRoute(WebStarter webStarter) {
-        webStarter.addRoute("/*", new SecurityHandler(whiteList, tokenProvider));
+        webStarter.addRoute("/*", new GlobalHandler(whiteList, tokenProvider));
         webStarter.addOpenApiRoute("VerifyCodeHandler", new VerifyCodeHandler(redis));
         RoleService roleService = new RoleServiceImpl(sqlClient);
         DeptService deptService = new DeptServiceImpl(sqlClient);
