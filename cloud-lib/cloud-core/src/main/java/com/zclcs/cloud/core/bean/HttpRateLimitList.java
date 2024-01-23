@@ -1,6 +1,8 @@
 package com.zclcs.cloud.core.bean;
 
-import io.vertx.core.http.HttpMethod;
+import com.zclcs.common.core.constant.DatePattern;
+
+import java.time.LocalDateTime;
 
 /**
  * @author zclcs
@@ -10,16 +12,16 @@ public class HttpRateLimitList {
     /**
      * 允许的http方法
      */
-    private HttpMethod method;
+    private String method;
 
     /**
      * 允许的路径
      */
     private String path;
 
-    private String limitFrom;
+    private LocalDateTime limitFrom;
 
-    private String limitTo;
+    private LocalDateTime limitTo;
 
     private Integer rateLimitCount;
 
@@ -28,7 +30,7 @@ public class HttpRateLimitList {
     public HttpRateLimitList() {
     }
 
-    public HttpRateLimitList(HttpMethod method, String path, String limitFrom, String limitTo, Integer rateLimitCount, Integer intervalSec) {
+    public HttpRateLimitList(String method, String path, LocalDateTime limitFrom, LocalDateTime limitTo, Integer rateLimitCount, Integer intervalSec) {
         this.method = method;
         this.path = path;
         this.limitFrom = limitFrom;
@@ -37,11 +39,20 @@ public class HttpRateLimitList {
         this.intervalSec = intervalSec;
     }
 
-    public HttpMethod getMethod() {
+    public HttpRateLimitList(String method, String path, String limitFrom, String limitTo, Integer rateLimitCount, Integer intervalSec) {
+        this.method = method;
+        this.path = path;
+        setLimitFrom(limitFrom);
+        setLimitTo(limitTo);
+        this.rateLimitCount = rateLimitCount;
+        this.intervalSec = intervalSec;
+    }
+
+    public String getMethod() {
         return method;
     }
 
-    public void setMethod(HttpMethod method) {
+    public void setMethod(String method) {
         this.method = method;
     }
 
@@ -53,20 +64,20 @@ public class HttpRateLimitList {
         this.path = path;
     }
 
-    public String getLimitFrom() {
+    public LocalDateTime getLimitFrom() {
         return limitFrom;
     }
 
     public void setLimitFrom(String limitFrom) {
-        this.limitFrom = limitFrom;
+        this.limitFrom = LocalDateTime.parse(limitFrom, DatePattern.DATETIME_FORMATTER);
     }
 
-    public String getLimitTo() {
+    public LocalDateTime getLimitTo() {
         return limitTo;
     }
 
     public void setLimitTo(String limitTo) {
-        this.limitTo = limitTo;
+        this.limitTo = LocalDateTime.parse(limitTo, DatePattern.DATETIME_FORMATTER);
     }
 
     public Integer getRateLimitCount() {

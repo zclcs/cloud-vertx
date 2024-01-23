@@ -1,6 +1,9 @@
 package com.zclcs.cloud.core.bean;
 
-import io.vertx.core.http.HttpMethod;
+import com.zclcs.common.core.constant.DatePattern;
+import com.zclcs.common.core.utils.StringsUtil;
+
+import java.time.LocalDateTime;
 
 /**
  * @author zclcs
@@ -12,26 +15,34 @@ public class HttpBlackList {
     /**
      * 允许的http方法
      */
-    private HttpMethod method;
+    private String method;
 
     /**
      * 允许的路径
      */
     private String path;
 
-    private String limitFrom;
+    private LocalDateTime limitFrom;
 
-    private String limitTo;
+    private LocalDateTime limitTo;
 
     public HttpBlackList() {
     }
 
-    public HttpBlackList(String ip, HttpMethod method, String path, String limitFrom, String limitTo) {
+    public HttpBlackList(String ip, String method, String path, LocalDateTime limitFrom, LocalDateTime limitTo) {
         this.ip = ip;
         this.method = method;
         this.path = path;
         this.limitFrom = limitFrom;
         this.limitTo = limitTo;
+    }
+
+    public HttpBlackList(String ip, String method, String path, String limitFrom, String limitTo) {
+        this.ip = ip;
+        this.method = method;
+        this.path = path;
+        setLimitFrom(limitFrom);
+        setLimitTo(limitTo);
     }
 
     public String getIp() {
@@ -42,11 +53,11 @@ public class HttpBlackList {
         this.ip = ip;
     }
 
-    public HttpMethod getMethod() {
+    public String getMethod() {
         return method;
     }
 
-    public void setMethod(HttpMethod method) {
+    public void setMethod(String method) {
         this.method = method;
     }
 
@@ -58,19 +69,19 @@ public class HttpBlackList {
         this.path = path;
     }
 
-    public String getLimitFrom() {
+    public LocalDateTime getLimitFrom() {
         return limitFrom;
     }
 
     public void setLimitFrom(String limitFrom) {
-        this.limitFrom = limitFrom;
+        this.limitFrom = StringsUtil.isBlank(limitFrom) ? null : LocalDateTime.parse(limitFrom, DatePattern.DATETIME_FORMATTER);
     }
 
-    public String getLimitTo() {
+    public LocalDateTime getLimitTo() {
         return limitTo;
     }
 
     public void setLimitTo(String limitTo) {
-        this.limitTo = limitTo;
+        this.limitTo = StringsUtil.isBlank(limitTo) ? null : LocalDateTime.parse(limitTo, DatePattern.DATETIME_FORMATTER);
     }
 }

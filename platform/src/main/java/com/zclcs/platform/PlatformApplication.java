@@ -85,7 +85,7 @@ public class PlatformApplication extends AbstractVerticle {
                                                                 int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
                                                                 String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
                                                                 RedisAPI redis = RedisAPI.api(redisStarter.getClient());
-                                                                return new PlatformSystemVerticle(env, sqlClient, redis, whiteList, rateLimitList, blackList, platformSystemHttpPort, platformSystemHttpHost);
+                                                                return new PlatformSystemVerticle(env, sqlClient, redis, platformSystemHttpPort, platformSystemHttpHost);
                                                             },
                                                             new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
                                                     .onComplete(s -> {

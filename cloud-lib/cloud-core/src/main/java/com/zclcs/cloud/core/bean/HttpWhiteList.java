@@ -1,7 +1,5 @@
 package com.zclcs.cloud.core.bean;
 
-import io.vertx.core.http.HttpMethod;
-
 /**
  * @author zclcs
  */
@@ -10,7 +8,7 @@ public class HttpWhiteList {
     /**
      * 允许的http方法
      */
-    private HttpMethod method;
+    private String method;
 
     /**
      * 允许的路径
@@ -20,16 +18,16 @@ public class HttpWhiteList {
     public HttpWhiteList() {
     }
 
-    public HttpWhiteList(HttpMethod method, String path) {
+    public HttpWhiteList(String method, String path) {
         this.method = method;
         this.path = path;
     }
 
-    public HttpMethod getMethod() {
+    public String getMethod() {
         return method;
     }
 
-    public void setMethod(HttpMethod method) {
+    public void setMethod(String method) {
         this.method = method;
     }
 
