@@ -6,7 +6,6 @@ import com.zclcs.verify.code.starter.SpecVerifyCode;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.openapi.validation.ValidatedRequest;
 import io.vertx.redis.client.RedisAPI;
 import org.slf4j.Logger;
 
@@ -14,8 +13,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
-
-import static io.vertx.ext.web.openapi.router.RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST;
 
 /**
  * @author zclcs
@@ -32,8 +29,7 @@ public class VerifyCodeHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext ctx) {
-        ValidatedRequest validatedRequest = ctx.get(KEY_META_DATA_VALIDATED_REQUEST);
-        String randomStr = validatedRequest.getQuery().get("randomStr").getString();
+        String randomStr = ctx.request().getParam("randomStr");
         SpecVerifyCode specVerifyCode = new SpecVerifyCode(120, 40, 4);
         String code = specVerifyCode.text();
         String expireTime = String.valueOf(120 + new Random().nextLong(10) + 1L);

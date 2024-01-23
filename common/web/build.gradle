@@ -1,5 +1,4 @@
 dependencies {
     api(project(":common:core"))
     api("io.vertx:vertx-web")
-    api("io.vertx:vertx-web-openapi-router")
 }

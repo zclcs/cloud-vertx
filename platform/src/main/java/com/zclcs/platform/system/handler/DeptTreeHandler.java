@@ -6,14 +6,8 @@ import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.platform.system.dao.vo.DeptVo;
 import com.zclcs.platform.system.service.DeptService;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.openapi.validation.RequestParameter;
-import io.vertx.openapi.validation.ValidatedRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-
-import static io.vertx.ext.web.openapi.router.RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST;
 
 /**
  * @author zclcs
@@ -31,9 +25,7 @@ public class DeptTreeHandler extends BasePermissionHandler {
 
     @Override
     public void doNext(RoutingContext ctx) {
-        ValidatedRequest validatedRequest = ctx.get(KEY_META_DATA_VALIDATED_REQUEST);
-        Map<String, RequestParameter> query = validatedRequest.getQuery();
-        String deptName = query.get("deptName").getString();
+        String deptName = ctx.request().getParam("deptName");
         DeptVo deptVo = new DeptVo();
         deptVo.setDeptName(deptName);
         deptService.getDeptTree(deptVo)

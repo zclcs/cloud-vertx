@@ -112,7 +112,10 @@ public class GlobalHandler implements Handler<RoutingContext> {
 //                RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
 //            });
 //        }
-        check(ctx).onComplete(r -> ctx.next(), e -> {
+        check(ctx).onComplete(r -> {
+            ctx.next();
+        }, e -> {
+            log.error("GlobalHandler", e);
             if (e instanceof SecurityException securityException) {
                 RoutingContextUtil.error(ctx, securityException.getHttpStatus(), securityException.getMsg());
             } else {

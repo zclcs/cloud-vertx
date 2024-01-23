@@ -11,9 +11,8 @@ import com.zclcs.platform.system.dao.vo.UserTokenVo;
 import com.zclcs.platform.system.service.UserService;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RequestBody;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.openapi.validation.RequestParameter;
-import io.vertx.openapi.validation.ValidatedRequest;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.redis.client.Response;
 import org.slf4j.Logger;
@@ -28,10 +27,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static io.vertx.ext.web.openapi.router.RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST;
 
 /**
  * @author zclcs
@@ -66,13 +62,12 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext ctx) {
-        ValidatedRequest validatedRequest = ctx.get(KEY_META_DATA_VALIDATED_REQUEST);
-        Map<String, RequestParameter> query = validatedRequest.getQuery();
-        JsonObject jsonObject = validatedRequest.getBody().getJsonObject();
+        RequestBody body = ctx.body();
+        JsonObject jsonObject = body.asJsonObject();
         String username = jsonObject.getString("username");
         String password = jsonObject.getString("password");
-        String code = query.get("code").getString();
-        String randomStr = query.get("randomStr").getString();
+        String code = ctx.request().getParam("code");
+        String randomStr = ctx.request().getParam("randomStr");
         String verifyCodeRedisPrefix = String.format(RedisPrefix.VERIFY_CODE_PREFIX, randomStr);
         if (checkVerifyCode) {
             checkVerifyCode(ctx, verifyCodeRedisPrefix, (r -> {

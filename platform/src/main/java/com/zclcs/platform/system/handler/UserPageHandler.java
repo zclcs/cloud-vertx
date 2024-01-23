@@ -7,14 +7,8 @@ import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.platform.system.dao.vo.UserVo;
 import com.zclcs.platform.system.service.UserService;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.openapi.validation.RequestParameter;
-import io.vertx.openapi.validation.ValidatedRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-
-import static io.vertx.ext.web.openapi.router.RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST;
 
 /**
  * @author zclcs
@@ -32,11 +26,9 @@ public class UserPageHandler extends BasePermissionHandler {
 
     @Override
     public void doNext(RoutingContext ctx) {
-        ValidatedRequest validatedRequest = ctx.get(KEY_META_DATA_VALIDATED_REQUEST);
-        Map<String, RequestParameter> query = validatedRequest.getQuery();
-        Long pageNum = query.get("pageNum").getLong();
-        Long pageSize = query.get("pageSize").getLong();
-        String username = query.get("username").getString();
+        Long pageNum = Long.valueOf(ctx.request().getParam("pageNum", "1"));
+        Long pageSize = Long.valueOf(ctx.request().getParam("pageSize", "10"));
+        String username = ctx.request().getParam("username");
         UserVo userVo = new UserVo();
         userVo.setUsername(username);
         userService.getUserPage(userVo, new PageAo(pageNum, pageSize))
