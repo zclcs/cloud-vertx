@@ -2,7 +2,7 @@ package com.zclcs.cloud.core.bean;
 
 import com.zclcs.common.core.constant.DatePattern;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * @author zclcs
@@ -19,9 +19,9 @@ public class HttpRateLimitList {
      */
     private String path;
 
-    private LocalDateTime limitFrom;
+    private LocalTime limitFrom;
 
-    private LocalDateTime limitTo;
+    private LocalTime limitTo;
 
     private Integer rateLimitCount;
 
@@ -30,7 +30,7 @@ public class HttpRateLimitList {
     public HttpRateLimitList() {
     }
 
-    public HttpRateLimitList(String method, String path, LocalDateTime limitFrom, LocalDateTime limitTo, Integer rateLimitCount, Integer intervalSec) {
+    public HttpRateLimitList(String method, String path, LocalTime limitFrom, LocalTime limitTo, Integer rateLimitCount, Integer intervalSec) {
         this.method = method;
         this.path = path;
         this.limitFrom = limitFrom;
@@ -64,20 +64,20 @@ public class HttpRateLimitList {
         this.path = path;
     }
 
-    public LocalDateTime getLimitFrom() {
+    public LocalTime getLimitFrom() {
         return limitFrom;
     }
 
     public void setLimitFrom(String limitFrom) {
-        this.limitFrom = LocalDateTime.parse(limitFrom, DatePattern.DATETIME_FORMATTER);
+        this.limitFrom = LocalTime.parse(limitFrom, DatePattern.TIME_FORMATTER);
     }
 
-    public LocalDateTime getLimitTo() {
+    public LocalTime getLimitTo() {
         return limitTo;
     }
 
     public void setLimitTo(String limitTo) {
-        this.limitTo = LocalDateTime.parse(limitTo, DatePattern.DATETIME_FORMATTER);
+        this.limitTo = LocalTime.parse(limitTo, DatePattern.TIME_FORMATTER);
     }
 
     public Integer getRateLimitCount() {

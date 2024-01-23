@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -137,10 +138,10 @@ public class GlobalHandler implements Handler<RoutingContext> {
                         return stintProvider.getBlackList(method.name(), path)
                                 .compose(blackList -> {
                                     for (HttpBlackList black : blackList) {
-                                        LocalDateTime limitFrom = black.getLimitFrom();
-                                        LocalDateTime limitTo = black.getLimitTo();
+                                        LocalTime limitFrom = black.getLimitFrom();
+                                        LocalTime limitTo = black.getLimitTo();
                                         if (limitFrom != null && limitTo != null) {
-                                            LocalDateTime now = LocalDateTime.now();
+                                            LocalTime now = LocalDateTime.now().toLocalTime();
                                             if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
                                                 return Future.failedFuture(new SecurityException(HttpStatus.HTTP_FORBIDDEN, "限制访问"));
                                             }
@@ -151,10 +152,10 @@ public class GlobalHandler implements Handler<RoutingContext> {
                                     return stintProvider.getRateLimitList(method.name(), path)
                                             .compose(rateLimit -> {
                                                 if (rateLimit != null) {
-                                                    LocalDateTime limitFrom = rateLimit.getLimitFrom();
-                                                    LocalDateTime limitTo = rateLimit.getLimitTo();
+                                                    LocalTime limitFrom = rateLimit.getLimitFrom();
+                                                    LocalTime limitTo = rateLimit.getLimitTo();
                                                     if (limitFrom != null && limitTo != null) {
-                                                        LocalDateTime now = LocalDateTime.now();
+                                                        LocalTime now = LocalDateTime.now().toLocalTime();
                                                         if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
                                                             return rateLimiterClient.isAllowed(String.format(RedisPrefix.RATE_LIMIT_PREFIX, method.name(), path, ip), rateLimit.getRateLimitCount(), rateLimit.getIntervalSec(), TimeUnit.SECONDS).compose(data -> {
                                                                 if (data) {

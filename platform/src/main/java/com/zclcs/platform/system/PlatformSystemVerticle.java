@@ -3,7 +3,6 @@ package com.zclcs.platform.system;
 import com.zclcs.cloud.lib.security.logic.RedisTokenLogic;
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.GlobalHandler;
-import com.zclcs.common.redis.starter.rate.limit.RateLimiterClient;
 import com.zclcs.common.redis.starter.rate.limit.impl.DefaultRateLimiterClient;
 import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.common.security.provider.TokenProvider;
@@ -38,8 +37,6 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final TokenProvider tokenProvider;
 
-    private final RateLimiterClient rateLimiterClient;
-
     private final RedisAPI redis;
 
     private final SqlClient sqlClient;
@@ -57,7 +54,6 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         this.httpPort = httpPort;
         this.httpHost = httpHost;
         this.tokenProvider = new RedisTokenLogic(redis);
-        this.rateLimiterClient = new DefaultRateLimiterClient(vertx, redis);
     }
 
     @Override
@@ -92,11 +88,12 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     public void initRoute(Router router) {
         DefaultStintLogic stintProvider = new DefaultStintLogic(config(), redis, sqlClient);
+        DefaultRateLimiterClient defaultRateLimiterClient = new DefaultRateLimiterClient(vertx, redis);
         RoleService roleService = new RoleServiceImpl(sqlClient);
         DeptService deptService = new DeptServiceImpl(sqlClient);
         UserService userService = new UserServiceImpl(roleService, sqlClient, redis);
         PermissionProvider hasPermissionLogic = new HasPermissionLogic("user:view", userService);
-        router.route("/*").handler(new GlobalHandler(tokenProvider, rateLimiterClient, stintProvider));
+        router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
         router.get("/code").handler(new VerifyCodeHandler(redis));
         router.post("/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
         router.get("/user/permissions").handler(new UserPermissionsHandler(userService));

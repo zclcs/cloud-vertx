@@ -3,7 +3,7 @@ package com.zclcs.cloud.core.bean;
 import com.zclcs.common.core.constant.DatePattern;
 import com.zclcs.common.core.utils.StringsUtil;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * @author zclcs
@@ -22,14 +22,14 @@ public class HttpBlackList {
      */
     private String path;
 
-    private LocalDateTime limitFrom;
+    private LocalTime limitFrom;
 
-    private LocalDateTime limitTo;
+    private LocalTime limitTo;
 
     public HttpBlackList() {
     }
 
-    public HttpBlackList(String ip, String method, String path, LocalDateTime limitFrom, LocalDateTime limitTo) {
+    public HttpBlackList(String ip, String method, String path, LocalTime limitFrom, LocalTime limitTo) {
         this.ip = ip;
         this.method = method;
         this.path = path;
@@ -69,19 +69,19 @@ public class HttpBlackList {
         this.path = path;
     }
 
-    public LocalDateTime getLimitFrom() {
+    public LocalTime getLimitFrom() {
         return limitFrom;
     }
 
     public void setLimitFrom(String limitFrom) {
-        this.limitFrom = StringsUtil.isBlank(limitFrom) ? null : LocalDateTime.parse(limitFrom, DatePattern.DATETIME_FORMATTER);
+        this.limitFrom = StringsUtil.isBlank(limitFrom) ? null : LocalTime.parse(limitFrom, DatePattern.TIME_FORMATTER);
     }
 
-    public LocalDateTime getLimitTo() {
+    public LocalTime getLimitTo() {
         return limitTo;
     }
 
     public void setLimitTo(String limitTo) {
-        this.limitTo = StringsUtil.isBlank(limitTo) ? null : LocalDateTime.parse(limitTo, DatePattern.DATETIME_FORMATTER);
+        this.limitTo = StringsUtil.isBlank(limitTo) ? null : LocalTime.parse(limitTo, DatePattern.TIME_FORMATTER);
     }
 }
