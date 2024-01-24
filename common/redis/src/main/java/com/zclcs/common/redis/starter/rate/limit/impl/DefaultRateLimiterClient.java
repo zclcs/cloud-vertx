@@ -7,7 +7,9 @@ import io.vertx.redis.client.RedisAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,6 +31,7 @@ public class DefaultRateLimiterClient implements RateLimiterClient {
 
     private final Vertx vertx;
     private final RedisAPI redis;
+    private final Map<String, String> luaScripts = new HashMap<>();
 
     public DefaultRateLimiterClient(Vertx vertx, RedisAPI redis) {
         this.vertx = vertx;
@@ -41,16 +44,21 @@ public class DefaultRateLimiterClient implements RateLimiterClient {
         String redisKeyBuilder = REDIS_KEY_PREFIX + key;
         // 转为毫秒
         long ttlMillis = timeUnit.toMillis(ttl);
-        return vertx.fileSystem().readFile("scripts/rate_limiter.lua").compose(file -> {
-            String string = file.toString().translateEscapes().replace("\r\n", "");
-            if (string == null) {
-                return Future.failedFuture("lua file not found");
-            }
-            return redis.eval(List.of(string, redisKeyBuilder, String.valueOf(max), String.valueOf(ttlMillis)))
-                    .compose(response -> {
-                        log.info("re {}", response);
-                        return Future.succeededFuture(response != null && response.toInteger() != FAIL_CODE);
-                    });
-        });
+        String luaFileName = "rate_limiter.lua";
+        if (luaScripts.get(luaFileName) == null) {
+            return vertx.fileSystem().readFile("scripts/" + luaFileName).compose(file ->
+                    redis.script(List.of("load", file.toString())).compose(sha -> {
+                        String shaString = sha.toString();
+                        luaScripts.put(luaFileName, shaString);
+                        return evalsha(luaScripts.get(luaFileName), redisKeyBuilder, max, ttlMillis);
+                    }));
+        } else {
+            return evalsha(luaScripts.get(luaFileName), redisKeyBuilder, max, ttlMillis);
+        }
+    }
+
+    private Future<Boolean> evalsha(String sha, String key, long max, long ttl) {
+        return redis.evalsha(List.of(sha, "1", key, String.valueOf(max), String.valueOf(ttl)))
+                .compose(response -> Future.succeededFuture(response != null && response.toInteger() != FAIL_CODE));
     }
 }

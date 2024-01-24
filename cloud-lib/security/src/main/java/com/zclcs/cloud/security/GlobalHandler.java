@@ -11,7 +11,6 @@ import com.zclcs.common.security.provider.TokenProvider;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,76 +43,7 @@ public class GlobalHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext ctx) {
-//        HttpServerRequest request = ctx.request();
-//        HttpMethod method = request.method();
-//        String path = request.path();
-//
-//        for (HttpBlackList blackList : blackList) {
-//            if (CommonCore.HTTP_METHOD_ALL.equalsIgnoreCase(blackList.getMethod()) || method.name().equalsIgnoreCase(blackList.getMethod())) {
-//                if (path.equals(blackList.getPath())) {
-//                    LocalDateTime limitFrom = blackList.getLimitFrom();
-//                    LocalDateTime limitTo = blackList.getLimitTo();
-//                    if (limitFrom != null && limitTo != null) {
-//                        LocalDateTime now = LocalDateTime.now();
-//                        if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
-//                            String ip = RoutingContextUtil.getHttpRequestIpAddress(ctx);
-//                            if (StringsUtil.isBlank(blackList.getIp()) || ip.equals(blackList.getIp())) {
-//                                RoutingContextUtil.error(ctx, HttpStatus.HTTP_FORBIDDEN, "限制访问");
-//                            }
-//                        }
-//                    } else {
-//                        String ip = RoutingContextUtil.getHttpRequestIpAddress(ctx);
-//                        if (StringsUtil.isBlank(blackList.getIp()) || ip.equals(blackList.getIp())) {
-//                            RoutingContextUtil.error(ctx, HttpStatus.HTTP_FORBIDDEN, "限制访问");
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        for (HttpRateLimitList rateLimit : rateLimitList) {
-//            if (method.name().equalsIgnoreCase(rateLimit.getMethod()) && path.equals(rateLimit.getPath())) {
-//                LocalDateTime limitFrom = rateLimit.getLimitFrom();
-//                LocalDateTime limitTo = rateLimit.getLimitTo();
-//                LocalDateTime now = LocalDateTime.now();
-//                if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
-//                    String ip = RoutingContextUtil.getHttpRequestIpAddress(ctx);
-//                    String rateLimitKey = String.format(RedisPrefix.RATE_LIMIT_PREFIX, method.name(), path, ip);
-//                    rateLimiterClient.isAllowed(rateLimitKey, rateLimit.getRateLimitCount(), rateLimit.getIntervalSec(), TimeUnit.SECONDS).onComplete((data) -> {
-//                        if (!data.succeeded() || !data.result()) {
-//                            RoutingContextUtil.error(ctx, HttpStatus.HTTP_TOO_MANY_REQUESTS, "请求频率过快");
-//                        }
-//                    });
-//                }
-//            }
-//        }
-//
-//        for (HttpWhiteList whiteList : whiteList) {
-//            if (method.name().equalsIgnoreCase(whiteList.getMethod()) && path.equals(whiteList.getPath())) {
-//                ctx.next();
-//                return;
-//            }
-//        }
-//
-//        String s = request.headers().get("Authorization");
-//        if (StringsUtil.isBlank(s)) {
-//            RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "无权限");
-//        } else {
-//            String finalToken = s.replace("Bearer ", "");
-//            tokenProvider.verifyToken(finalToken).onComplete((data) -> {
-//                if (data != null) {
-//                    ctx.put(SecurityContext.LOGIN_ID, data);
-//                    ctx.put(SecurityContext.TOKEN, finalToken);
-//                    ctx.next();
-//                } else {
-//                    RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "token过期");
-//                }
-//            }, e -> {
-//                log.error("token验证失败", e);
-//                RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
-//            });
-//        }
-        check(ctx).onComplete(r -> {
+        doFilter(ctx).onComplete(r -> {
             ctx.next();
         }, e -> {
             log.error("GlobalHandler", e);
@@ -125,11 +55,18 @@ public class GlobalHandler implements Handler<RoutingContext> {
         });
     }
 
-    private Future<Void> check(RoutingContext ctx) {
-        HttpServerRequest request = ctx.request();
-        HttpMethod method = request.method();
-        String path = request.path();
+    private Future<Void> doFilter(RoutingContext ctx) {
+        HttpMethod method = ctx.request().method();
+        String path = ctx.request().path();
         String ip = RoutingContextUtil.getHttpRequestIpAddress(ctx);
+        return filterBlackList(ip, method, path,
+                filterRateLimit(ip, method, path,
+                        filterWhiteList(method, path, checkToken(ctx))
+                )
+        );
+    }
+
+    private Future<Void> filterBlackList(String ip, HttpMethod method, String path, Future<Void> next) {
         return stintProvider.getBlackList(ip, method.name(), path)
                 .compose(blackListByIp -> {
                     if (blackListByIp != null) {
@@ -149,51 +86,62 @@ public class GlobalHandler implements Handler<RoutingContext> {
                                             return Future.failedFuture(new SecurityException(HttpStatus.HTTP_FORBIDDEN, "限制访问"));
                                         }
                                     }
-                                    return stintProvider.getRateLimitList(method.name(), path)
-                                            .compose(rateLimit -> {
-                                                if (rateLimit != null) {
-                                                    LocalTime limitFrom = rateLimit.getLimitFrom();
-                                                    LocalTime limitTo = rateLimit.getLimitTo();
-                                                    if (limitFrom != null && limitTo != null) {
-                                                        LocalTime now = LocalDateTime.now().toLocalTime();
-                                                        if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
-                                                            return rateLimiterClient.isAllowed(String.format(RedisPrefix.RATE_LIMIT_PREFIX, method.name(), path, ip), rateLimit.getRateLimitCount(), rateLimit.getIntervalSec(), TimeUnit.SECONDS).compose(data -> {
-                                                                if (data) {
-                                                                    return Future.failedFuture(new SecurityException(HttpStatus.HTTP_TOO_MANY_REQUESTS, "请求频率过快"));
-                                                                }
-                                                                return Future.succeededFuture();
-                                                            });
-                                                        }
-                                                    }
-                                                }
-                                                return stintProvider.getWhiteList(method.name(), path)
-                                                        .compose(whiteList -> {
-                                                            if (whiteList != null) {
-                                                                return Future.succeededFuture();
-                                                            } else {
-                                                                String s = request.headers().get("Authorization");
-                                                                if (StringsUtil.isBlank(s)) {
-                                                                    return Future.failedFuture(new SecurityException(HttpStatus.HTTP_UNAUTHORIZED, "无权限"));
-                                                                } else {
-                                                                    String finalToken = s.replace("Bearer ", "");
-                                                                    return tokenProvider.verifyToken(finalToken).compose(data -> {
-                                                                        if (data != null) {
-                                                                            ctx.put(SecurityContext.LOGIN_ID, data);
-                                                                            ctx.put(SecurityContext.TOKEN, finalToken);
-                                                                            return Future.succeededFuture();
-                                                                        } else {
-                                                                            return Future.failedFuture(new SecurityException(HttpStatus.HTTP_FAILED_DEPENDENCY, "token过期"));
-                                                                        }
-                                                                    });
-                                                                }
-                                                            }
-                                                        })
-                                                        ;
-                                            });
+                                    return next;
                                 });
+                    }
+                });
+    }
+
+    private Future<Void> filterRateLimit(String ip, HttpMethod method, String path, Future<Void> next) {
+        return stintProvider.getRateLimitList(method.name(), path)
+                .compose(rateLimit -> {
+                    if (rateLimit != null) {
+                        LocalTime limitFrom = rateLimit.getLimitFrom();
+                        LocalTime limitTo = rateLimit.getLimitTo();
+                        if (limitFrom != null && limitTo != null) {
+                            LocalTime now = LocalDateTime.now().toLocalTime();
+                            if (!limitFrom.isAfter(now) && !limitTo.isBefore(now)) {
+                                return rateLimiterClient.isAllowed(String.format(RedisPrefix.RATE_LIMIT_PREFIX, method.name(), path, ip), rateLimit.getRateLimitCount(), rateLimit.getIntervalSec(), TimeUnit.SECONDS).compose(data -> {
+                                    if (!data) {
+                                        return Future.failedFuture(new SecurityException(HttpStatus.HTTP_TOO_MANY_REQUESTS, "请求频率过快"));
+                                    }
+                                    return next;
+                                });
+                            }
+                        }
+                    }
+                    return next;
+                });
+    }
+
+    private Future<Void> filterWhiteList(HttpMethod method, String path, Future<Void> next) {
+        return stintProvider.getWhiteList(method.name(), path)
+                .compose(whiteList -> {
+                    if (whiteList != null) {
+                        return Future.succeededFuture();
+                    } else {
+                        return next;
                     }
                 })
                 ;
+    }
+
+    private Future<Void> checkToken(RoutingContext ctx) {
+        String s = ctx.request().headers().get("Authorization");
+        if (StringsUtil.isBlank(s)) {
+            return Future.failedFuture(new SecurityException(HttpStatus.HTTP_UNAUTHORIZED, "无权限"));
+        } else {
+            String finalToken = s.replace("Bearer ", "");
+            return tokenProvider.verifyToken(finalToken).compose(data -> {
+                if (data != null) {
+                    ctx.put(SecurityContext.LOGIN_ID, data);
+                    ctx.put(SecurityContext.TOKEN, finalToken);
+                    return Future.succeededFuture();
+                } else {
+                    return Future.failedFuture(new SecurityException(HttpStatus.HTTP_FAILED_DEPENDENCY, "token过期"));
+                }
+            });
+        }
     }
 
 }
