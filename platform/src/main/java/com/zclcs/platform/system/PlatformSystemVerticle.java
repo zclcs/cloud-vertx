@@ -98,8 +98,8 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         router.post("/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
         router.get("/user/permissions").handler(new UserPermissionsHandler(userService));
         router.get("/user/routers").handler(new UserRoutersHandler(userService));
-        router.get("/user").handler(new UserPageHandler(tokenProvider, defaultRateLimiterClient, stintProvider, hasPermissionLogic, userService));
-        router.get("/dept/tree").handler(new DeptTreeHandler(tokenProvider, defaultRateLimiterClient, stintProvider, hasPermissionLogic, deptService));
+        router.get("/user").handler(new UserPageHandler(hasPermissionLogic, userService));
+        router.get("/dept/tree").handler(new DeptTreeHandler(hasPermissionLogic, deptService));
         router.get("/test").handler(new TestHandler(userService));
         router.get("/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));
     }
