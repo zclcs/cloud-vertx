@@ -5,7 +5,6 @@ import com.zclcs.common.local.cache.LocalCache;
 import com.zclcs.common.security.provider.TokenProvider;
 import io.vertx.core.Future;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.redis.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +53,10 @@ public class RedisTokenLogic implements TokenProvider {
             if (v != null) {
                 return Future.succeededFuture(v);
             } else {
-                return redis.get(k).map(Response::toString).compose(rv -> {
+                return redis.get(k).compose(rv -> {
                     if (rv != null) {
-                        tokenCache.put(k, rv);
-                        return Future.succeededFuture(rv);
+                        tokenCache.put(k, rv.toString());
+                        return Future.succeededFuture(rv.toString());
                     } else {
                         return Future.succeededFuture(null);
                     }

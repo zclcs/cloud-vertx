@@ -165,7 +165,7 @@ public class GlobalHandler implements Handler<RoutingContext> {
         } else {
             String finalToken = s.replace("Bearer ", "");
             return tokenProvider.verifyToken(finalToken).compose(data -> {
-                if (data != null) {
+                if (StringsUtil.isNotBlank(data)) {
                     ctx.put(SecurityContext.LOGIN_ID, data);
                     ctx.put(SecurityContext.TOKEN, finalToken);
                     return Future.succeededFuture();
