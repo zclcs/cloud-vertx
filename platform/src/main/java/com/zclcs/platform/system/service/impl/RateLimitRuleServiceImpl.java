@@ -1,5 +1,6 @@
 package com.zclcs.platform.system.service.impl;
 
+import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.common.config.utils.JsonUtil;
 import com.zclcs.common.local.cache.LocalCache;
@@ -30,7 +31,7 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
         this.sqlClient = sqlClient;
     }
 
-    private final LocalCache<String, List<RateLimitRule>> rateLimitRuleListCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
+    private final LocalCache<String, List<HttpRateLimitList>> rateLimitRuleListCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
 
     @Override
     public Future<List<RateLimitRule>> getRateEnableLimitRule() {
@@ -57,25 +58,25 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
     }
 
     @Override
-    public Future<List<RateLimitRule>> getRateEnableLimitRuleCache() {
-        return rateLimitRuleListCache.getIfPresent(RedisPrefix.RATE_LIMIT_LIST_PREFIX).compose(blackLists -> {
+    public Future<List<HttpRateLimitList>> getRateEnableHttpRateLimitListCache() {
+        return rateLimitRuleListCache.getIfPresent(RedisPrefix.HTTP_RATE_LIMIT_LIST_PREFIX).compose(blackLists -> {
             if (blackLists != null) {
                 return Future.succeededFuture(blackLists);
             } else {
-                return redis.get(RedisPrefix.RATE_LIMIT_LIST_PREFIX).compose(response -> {
+                return redis.get(RedisPrefix.HTTP_RATE_LIMIT_LIST_PREFIX).compose(response -> {
                     if (response != null) {
-                        List<RateLimitRule> redisValue = JsonUtil.readList(response.toString(), RateLimitRule.class);
-                        rateLimitRuleListCache.put(RedisPrefix.RATE_LIMIT_LIST_PREFIX, redisValue);
+                        List<HttpRateLimitList> redisValue = JsonUtil.readList(response.toString(), HttpRateLimitList.class);
+                        rateLimitRuleListCache.put(RedisPrefix.HTTP_RATE_LIMIT_LIST_PREFIX, redisValue);
                         return Future.succeededFuture(redisValue);
                     } else {
                         return getRateEnableLimitRule().compose(dv -> {
                             String expireTime = String.valueOf(redisExpire.getSeconds() + new Random().nextLong(100) + 1L);
+                            List<HttpRateLimitList> dataBaseValue = new ArrayList<>(dv.size());
                             if (!dv.isEmpty()) {
-                                redis.set(List.of(RedisPrefix.RATE_LIMIT_LIST_PREFIX, JsonUtil.toJson(dv), "EX", expireTime));
-                                return Future.succeededFuture(dv);
-                            } else {
-                                return null;
+                                dv.forEach(rateLimitRule -> dataBaseValue.add(rateLimitRule.toHttpRateLimitList()));
                             }
+                            redis.set(List.of(RedisPrefix.HTTP_RATE_LIMIT_LIST_PREFIX, JsonUtil.toJson(dataBaseValue), "EX", expireTime));
+                            return Future.succeededFuture(dataBaseValue);
                         });
                     }
                 });

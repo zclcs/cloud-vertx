@@ -1,5 +1,6 @@
 package com.zclcs.platform.system.service;
 
+import com.zclcs.cloud.core.bean.HttpBlackList;
 import com.zclcs.platform.system.dao.entity.BlackList;
 import io.vertx.core.Future;
 
@@ -22,6 +23,6 @@ public interface BlackListService {
      *
      * @return 黑名单
      */
-    Future<List<BlackList>> getEnableBlackListCache();
+    Future<List<HttpBlackList>> getEnableHttpBlackListCache();
 
 }

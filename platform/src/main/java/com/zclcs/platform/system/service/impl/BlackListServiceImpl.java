@@ -1,5 +1,6 @@
 package com.zclcs.platform.system.service.impl;
 
+import com.zclcs.cloud.core.bean.HttpBlackList;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.common.config.utils.JsonUtil;
 import com.zclcs.common.local.cache.LocalCache;
@@ -33,7 +34,7 @@ public class BlackListServiceImpl implements BlackListService {
         this.sqlClient = sqlClient;
     }
 
-    private final LocalCache<String, List<BlackList>> blackListCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
+    private final LocalCache<String, List<HttpBlackList>> blackListCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
 
     @Override
     public Future<List<BlackList>> getEnableBlackList() {
@@ -63,25 +64,25 @@ public class BlackListServiceImpl implements BlackListService {
     }
 
     @Override
-    public Future<List<BlackList>> getEnableBlackListCache() {
-        return blackListCache.getIfPresent(RedisPrefix.BLACK_LIST_PREFIX).compose(blackLists -> {
+    public Future<List<HttpBlackList>> getEnableHttpBlackListCache() {
+        return blackListCache.getIfPresent(RedisPrefix.HTTP_BLACK_LIST_PREFIX).compose(blackLists -> {
             if (blackLists != null) {
                 return Future.succeededFuture(blackLists);
             } else {
-                return redis.get(RedisPrefix.BLACK_LIST_PREFIX).compose(response -> {
+                return redis.get(RedisPrefix.HTTP_BLACK_LIST_PREFIX).compose(response -> {
                     if (response != null) {
-                        List<BlackList> redisValue = JsonUtil.readList(response.toString(), BlackList.class);
-                        blackListCache.put(RedisPrefix.BLACK_LIST_PREFIX, redisValue);
+                        List<HttpBlackList> redisValue = JsonUtil.readList(response.toString(), HttpBlackList.class);
+                        blackListCache.put(RedisPrefix.HTTP_BLACK_LIST_PREFIX, redisValue);
                         return Future.succeededFuture(redisValue);
                     } else {
                         return getEnableBlackList().compose(dv -> {
                             String expireTime = String.valueOf(redisExpire.getSeconds() + new Random().nextLong(100) + 1L);
+                            List<HttpBlackList> httpBlackLists = new ArrayList<>();
                             if (!dv.isEmpty()) {
-                                redis.set(List.of(RedisPrefix.BLACK_LIST_PREFIX, JsonUtil.toJson(dv), "EX", expireTime));
-                                return Future.succeededFuture(dv);
-                            } else {
-                                return null;
+                                dv.forEach(blackList -> httpBlackLists.add(blackList.toHttpBlackList()));
                             }
+                            redis.set(List.of(RedisPrefix.HTTP_BLACK_LIST_PREFIX, JsonUtil.toJson(httpBlackLists), "EX", expireTime));
+                            return Future.succeededFuture(httpBlackLists);
                         });
                     }
                 });

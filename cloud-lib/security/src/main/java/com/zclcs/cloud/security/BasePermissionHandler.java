@@ -2,23 +2,25 @@ package com.zclcs.cloud.security;
 
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.common.core.constant.HttpStatus;
+import com.zclcs.common.redis.starter.rate.limit.RateLimiterClient;
 import com.zclcs.common.security.provider.PermissionProvider;
-import io.vertx.core.Handler;
+import com.zclcs.common.security.provider.TokenProvider;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * @author zclcs
  */
-public abstract class BasePermissionHandler implements Handler<RoutingContext> {
+public abstract class BasePermissionHandler extends BaseHandler {
 
     protected final PermissionProvider permissionProvider;
 
-    public BasePermissionHandler(PermissionProvider permissionProvider) {
+    public BasePermissionHandler(TokenProvider tokenProvider, RateLimiterClient rateLimiterClient, StintProvider stintProvider, PermissionProvider permissionProvider) {
+        super(tokenProvider, rateLimiterClient, stintProvider);
         this.permissionProvider = permissionProvider;
     }
 
     @Override
-    public void handle(RoutingContext ctx) {
+    public void doNext(RoutingContext ctx) {
         String loginId = ctx.get(SecurityContext.LOGIN_ID);
         String loginType = ctx.get(SecurityContext.LOGIN_TYPE, "PC");
         if (loginId == null || loginType == null) {
@@ -27,7 +29,7 @@ public abstract class BasePermissionHandler implements Handler<RoutingContext> {
             permissionProvider.hasPermission(loginId, loginType)
                     .onComplete(res -> {
                         if (res) {
-                            doNext(ctx);
+                            completePermission(ctx);
                         } else {
                             RoutingContextUtil.error(ctx, HttpStatus.HTTP_UNAUTHORIZED, "无权限");
                         }
@@ -43,6 +45,6 @@ public abstract class BasePermissionHandler implements Handler<RoutingContext> {
      *
      * @param ctx 上下文
      */
-    public abstract void doNext(RoutingContext ctx);
+    public abstract void completePermission(RoutingContext ctx);
 
 }

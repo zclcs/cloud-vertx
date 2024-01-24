@@ -14,8 +14,8 @@ public class RedisPrefix {
 
     public static final String RATE_LIMIT_PREFIX = "rate:limit:%s:%s:%s";
 
-    public static final String RATE_LIMIT_LIST_PREFIX = "rate:limit:list";
+    public static final String HTTP_RATE_LIMIT_LIST_PREFIX = "http:rate:limit:list";
 
-    public static final String BLACK_LIST_PREFIX = "black:list";
+    public static final String HTTP_BLACK_LIST_PREFIX = "http:black:list";
 
 }

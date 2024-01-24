@@ -22,28 +22,26 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author zhouc
- */
-public class GlobalHandler implements Handler<RoutingContext> {
+public abstract class BaseHandler implements Handler<RoutingContext> {
 
-    private final Logger log = LoggerFactory.getLogger(GlobalHandler.class.getName());
-    private final TokenProvider tokenProvider;
-    private final RateLimiterClient rateLimiterClient;
-    private final StintProvider stintProvider;
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final TokenProvider tokenProvider;
+    protected final RateLimiterClient rateLimiterClient;
+    protected final StintProvider stintProvider;
 
-    public GlobalHandler(TokenProvider tokenProvider, RateLimiterClient rateLimiterClient, StintProvider stintProvider) {
+    public BaseHandler(TokenProvider tokenProvider, RateLimiterClient rateLimiterClient, StintProvider stintProvider) {
         this.tokenProvider = tokenProvider;
         this.rateLimiterClient = rateLimiterClient;
         this.stintProvider = stintProvider;
     }
 
+
     @Override
     public void handle(RoutingContext ctx) {
         doFilter(ctx).onComplete(r -> {
-            ctx.next();
+            doNext(ctx);
         }, e -> {
-            log.error("GlobalHandler", e);
+            log.error("BaseHandler", e);
             if (e instanceof SecurityException securityException) {
                 RoutingContextUtil.error(ctx, securityException.getHttpStatus(), securityException.getMsg());
             } else {
@@ -175,5 +173,13 @@ public class GlobalHandler implements Handler<RoutingContext> {
             });
         }
     }
+
+
+    /**
+     * 下一步处理
+     *
+     * @param ctx 上下文
+     */
+    public abstract void doNext(RoutingContext ctx);
 
 }

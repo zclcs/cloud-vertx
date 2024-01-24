@@ -8,4 +8,6 @@ public class CommonCore {
     public static final String TOP_PARENT_CODE = "0";
 
     public static final String HTTP_METHOD_ALL = "ALL";
+
+    public static final String HTTP_PATH_ALL = "/**";
 }

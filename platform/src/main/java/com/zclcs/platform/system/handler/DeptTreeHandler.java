@@ -2,7 +2,10 @@ package com.zclcs.platform.system.handler;
 
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.BasePermissionHandler;
+import com.zclcs.cloud.security.StintProvider;
+import com.zclcs.common.redis.starter.rate.limit.RateLimiterClient;
 import com.zclcs.common.security.provider.PermissionProvider;
+import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.platform.system.dao.vo.DeptVo;
 import com.zclcs.platform.system.service.DeptService;
 import io.vertx.ext.web.RoutingContext;
@@ -18,13 +21,13 @@ public class DeptTreeHandler extends BasePermissionHandler {
 
     private final DeptService deptService;
 
-    public DeptTreeHandler(PermissionProvider permissionProvider, DeptService deptService) {
-        super(permissionProvider);
+    public DeptTreeHandler(TokenProvider tokenProvider, RateLimiterClient rateLimiterClient, StintProvider stintProvider, PermissionProvider permissionProvider, DeptService deptService) {
+        super(tokenProvider, rateLimiterClient, stintProvider, permissionProvider);
         this.deptService = deptService;
     }
 
     @Override
-    public void doNext(RoutingContext ctx) {
+    public void completePermission(RoutingContext ctx) {
         String deptName = ctx.request().getParam("deptName");
         DeptVo deptVo = new DeptVo();
         deptVo.setDeptName(deptName);
@@ -36,6 +39,5 @@ public class DeptTreeHandler extends BasePermissionHandler {
                     RoutingContextUtil.error(ctx, "查询失败");
                 })
         ;
-
     }
 }

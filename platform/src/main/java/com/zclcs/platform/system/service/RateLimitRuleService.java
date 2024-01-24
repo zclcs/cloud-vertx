@@ -1,5 +1,6 @@
 package com.zclcs.platform.system.service;
 
+import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.platform.system.dao.entity.RateLimitRule;
 import io.vertx.core.Future;
 
@@ -23,6 +24,6 @@ public interface RateLimitRuleService {
      *
      * @return 限流规则缓存
      */
-    Future<List<RateLimitRule>> getRateEnableLimitRuleCache();
+    Future<List<HttpRateLimitList>> getRateEnableHttpRateLimitListCache();
 
 }

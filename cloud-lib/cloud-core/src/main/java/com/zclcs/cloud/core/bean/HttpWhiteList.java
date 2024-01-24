@@ -6,6 +6,11 @@ package com.zclcs.cloud.core.bean;
 public class HttpWhiteList {
 
     /**
+     * 允许的ip
+     */
+    private String ip;
+
+    /**
      * 允许的http方法
      */
     private String method;
@@ -18,9 +23,23 @@ public class HttpWhiteList {
     public HttpWhiteList() {
     }
 
+    public HttpWhiteList(String ip, String method, String path) {
+        this.ip = ip;
+        this.method = method;
+        this.path = path;
+    }
+
     public HttpWhiteList(String method, String path) {
         this.method = method;
         this.path = path;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 
     public String getMethod() {
