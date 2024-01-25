@@ -19,12 +19,24 @@ import com.zclcs.platform.system.service.impl.UserServiceImpl;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.validation.BadRequestException;
+import io.vertx.ext.web.validation.BodyProcessorException;
+import io.vertx.ext.web.validation.ParameterProcessorException;
+import io.vertx.ext.web.validation.RequestPredicateException;
+import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder;
+import io.vertx.json.schema.SchemaParser;
+import io.vertx.json.schema.SchemaRouter;
+import io.vertx.json.schema.SchemaRouterOptions;
+import io.vertx.json.schema.draft7.dsl.Keywords;
+import io.vertx.json.schema.draft7.dsl.Schemas;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.sqlclient.SqlClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static io.vertx.ext.web.validation.builder.Parameters.param;
 
 /**
  * @author zclcs
@@ -69,11 +81,26 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                         httpHost,
                         ctx -> {
                             Throwable failure = ctx.failure();
-                            log.error("系统异常 {}", failure.getMessage(), failure);
-                            RoutingContextUtil.error(ctx, "系统异常");
+                            String msg = "系统异常";
+                            if (failure instanceof BadRequestException) {
+                                if (failure instanceof ParameterProcessorException e) {
+                                    msg = e.getMessage();
+                                } else if (failure instanceof BodyProcessorException e) {
+                                    msg = e.getMessage();
+                                } else if (failure instanceof RequestPredicateException e) {
+                                    msg = e.getMessage();
+                                }
+                            } else {
+                                log.error("全局异常捕捉 {}", failure.getMessage(), failure);
+                            }
+                            RoutingContextUtil.error(ctx, msg);
                         },
                         Map.of(
-                                404, (ctx) -> RoutingContextUtil.error(ctx, "接口未找到")
+                                404, (ctx) -> RoutingContextUtil.error(ctx, "请求路径未找到"),
+                                405, (ctx) -> RoutingContextUtil.error(ctx, "请求方法未找到"),
+                                406, (ctx) -> RoutingContextUtil.error(ctx, "请求头错误"),
+                                415, (ctx) -> RoutingContextUtil.error(ctx, "请求内容类型错误"),
+                                400, (ctx) -> RoutingContextUtil.error(ctx, "请求体为空")
                         )
                 )
                 .onSuccess(server -> {
@@ -94,7 +121,13 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         UserService userService = new UserServiceImpl(roleService, sqlClient, redis);
         PermissionProvider hasPermissionLogic = new HasPermissionLogic("user:view", userService);
         router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
-        router.get("/code").handler(new VerifyCodeHandler(redis));
+        SchemaParser parser = SchemaParser.createDraft7SchemaParser(
+                SchemaRouter.create(vertx, new SchemaRouterOptions())
+        );
+        router.get("/code").handler(ValidationHandlerBuilder
+                .create(parser)
+                .queryParameter(param("randomStr", Schemas.stringSchema().with(Keywords.maxLength(20))))
+                .build()).handler(new VerifyCodeHandler(redis));
         router.post("/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
         router.get("/user/permissions").handler(new UserPermissionsHandler(userService));
         router.get("/user/routers").handler(new UserRoutersHandler(userService));

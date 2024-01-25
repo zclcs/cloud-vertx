@@ -6,6 +6,8 @@ import com.zclcs.verify.code.starter.SpecVerifyCode;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.validation.RequestParameters;
+import io.vertx.ext.web.validation.ValidationHandler;
 import io.vertx.redis.client.RedisAPI;
 import org.slf4j.Logger;
 
@@ -29,7 +31,8 @@ public class VerifyCodeHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext ctx) {
-        String randomStr = ctx.request().getParam("randomStr");
+        RequestParameters parameters = ctx.get(ValidationHandler.REQUEST_CONTEXT_KEY);
+        String randomStr = parameters.queryParameter("randomStr").getString();
         SpecVerifyCode specVerifyCode = new SpecVerifyCode(120, 40, 4);
         String code = specVerifyCode.text();
         String expireTime = String.valueOf(120 + new Random().nextLong(10) + 1L);
