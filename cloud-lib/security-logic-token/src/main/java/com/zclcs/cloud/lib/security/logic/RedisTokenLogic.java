@@ -54,12 +54,9 @@ public class RedisTokenLogic implements TokenProvider {
                 return Future.succeededFuture(v);
             } else {
                 return redis.get(k).compose(rv -> {
-                    if (rv != null) {
-                        tokenCache.put(k, rv.toString());
-                        return Future.succeededFuture(rv.toString());
-                    } else {
-                        return Future.succeededFuture(null);
-                    }
+                    String redisToken = rv == null ? "" : rv.toString();
+                    tokenCache.put(k, redisToken);
+                    return Future.succeededFuture(redisToken);
                 });
             }
         });
