@@ -1,0 +1,30 @@
+plugins {
+    id "application"
+}
+
+dependencies {
+    implementation(project(":common:core"))
+}
+
+var launcherClassName = "io.vertx.core.Launcher"
+
+var verticleClassName = "com.zclcs.test.TestApplication"
+
+application {
+    mainClass = launcherClassName
+}
+
+shadowJar {
+    archiveClassifier = "fat"
+
+    manifest {
+        attributes(
+                "Main-Class": launcherClassName,
+                "Main-Verticle": verticleClassName
+        )
+    }
+
+    archiveBaseName.set("test")
+
+    mergeServiceFiles()
+}

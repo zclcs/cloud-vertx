@@ -26,4 +26,5 @@ include 'cloud-lib:redis-discovery-backend'
 include 'platform'
 include 'common:verify-code'
 findProject(':common:verify-code')?.name = 'verify-code'
+include 'test'
 
