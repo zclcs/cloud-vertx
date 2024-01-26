@@ -18,4 +18,6 @@ public class RedisPrefix {
 
     public static final String HTTP_BLACK_LIST_PREFIX = "http:black:list";
 
+    public static final String DICT_PREFIX = "dict:%s";
+
 }

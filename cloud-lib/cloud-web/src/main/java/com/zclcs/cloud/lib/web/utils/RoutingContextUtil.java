@@ -42,7 +42,7 @@ public class RoutingContextUtil {
             ip = headers.get("X-Real-IP");
         }
         if (ip == null || ip.isEmpty() || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.localAddress().hostAddress();
+            ip = request.remoteAddress().hostAddress();
         }
         if (ip.contains(StringPool.COMMA)) {
             ip = ip.split(StringPool.COMMA)[0];

@@ -162,6 +162,7 @@ public class UserVo extends BaseEntity implements Serializable {
     public UserVo() {
     }
 
+    
     public Long getUserId() {
         return userId;
     }

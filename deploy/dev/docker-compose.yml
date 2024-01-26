@@ -98,7 +98,7 @@ services:
     volumes:
       - ./log/platform:/app/log
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:${PLATFORM_SYSTEM_HTTP_PORT} || exit 1" ]
+      test: [ "CMD-SHELL", "curl -sS ${LOCAL_HOST_IP}:${PLATFORM_SYSTEM_HTTP_PORT}/health || exit 1" ]
       interval: ${DOCKER_HEALTHCHECK_INTERVAL}
       timeout: ${DOCKER_HEALTHCHECK_TIMEOUT}
       retries: ${DOCKER_HEALTHCHECK_RETRIES}

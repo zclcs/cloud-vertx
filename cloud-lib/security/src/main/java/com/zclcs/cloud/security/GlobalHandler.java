@@ -43,7 +43,7 @@ public class GlobalHandler implements Handler<RoutingContext> {
         doFilter(ctx).onComplete(r -> {
             ctx.next();
         }, e -> {
-            log.error("GlobalHandler", e);
+            log.error("GlobalHandler {}", e.getMessage());
             if (e instanceof SecurityException securityException) {
                 RoutingContextUtil.error(ctx, securityException.getHttpStatus(), securityException.getMsg());
             } else {

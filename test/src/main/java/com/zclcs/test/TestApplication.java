@@ -11,7 +11,7 @@ public class TestApplication extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        vertx.deployVerticle(ExampleVerticle::new,
+        vertx.deployVerticle(() -> new ExampleVerticle(),
                 new DeploymentOptions().setConfig(config()).setInstances(16))
         ;
     }

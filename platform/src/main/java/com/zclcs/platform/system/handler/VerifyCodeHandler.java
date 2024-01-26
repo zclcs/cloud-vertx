@@ -8,25 +8,38 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.validation.RequestParameters;
 import io.vertx.ext.web.validation.ValidationHandler;
+import io.vertx.ext.web.validation.builder.ValidationHandlerBuilder;
+import io.vertx.json.schema.SchemaParser;
+import io.vertx.json.schema.draft7.dsl.Keywords;
+import io.vertx.json.schema.draft7.dsl.Schemas;
 import io.vertx.redis.client.RedisAPI;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
+import static io.vertx.ext.web.validation.builder.Parameters.param;
+
 /**
  * @author zclcs
  */
 public class VerifyCodeHandler implements Handler<RoutingContext> {
 
-    private final Logger log = org.slf4j.LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final RedisAPI redis;
 
-    public VerifyCodeHandler(RedisAPI redis) {
+    public final ValidationHandler validationHandler;
+
+    public VerifyCodeHandler(RedisAPI redis, SchemaParser parser) {
         this.redis = redis;
+        validationHandler = ValidationHandlerBuilder
+                .create(parser)
+                .queryParameter(param("randomStr", Schemas.stringSchema().with(Keywords.maxLength(100))))
+                .build();
     }
 
     @Override
