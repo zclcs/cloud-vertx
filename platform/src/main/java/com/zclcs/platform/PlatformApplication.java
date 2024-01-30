@@ -48,30 +48,32 @@ public class PlatformApplication extends AbstractVerticle {
                                             log.error("init mysql db error {}", e.getMessage(), e);
                                             vertx.close();
                                         })
-                                ;
-                                RedisStarter redisStarter = new RedisStarter(vertx, env);
-                                redisStarter.connectRedis()
-                                        .onComplete(redisConn -> {
-                                            log.info("test connect redis success");
-                                            redisConn.close();
-                                        }, e -> {
-                                            log.error("connect redis error {}", e.getMessage(), e);
-                                            vertx.close();
-                                        })
-                                        .andThen(redisConn -> {
-                                            int platformSystemInstances = Integer.parseInt(env.getString("PLATFORM_SYSTEM_INSTANCES", "1"));
-                                            vertx.deployVerticle(() -> {
-                                                                int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
-                                                                String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
-                                                                RedisAPI redis = RedisAPI.api(redisStarter.getClient());
-                                                                return new PlatformSystemVerticle(env, sqlClient, redis, platformSystemHttpPort, platformSystemHttpHost);
-                                                            },
-                                                            new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
-                                                    .onComplete(s -> {
-                                                        log.info("PlatformSystem deploy success cost {} ms", (System.currentTimeMillis() - currentTimeMillis));
+                                        .andThen((asyncResult) -> {
+                                            RedisStarter redisStarter = new RedisStarter(vertx, env);
+                                            redisStarter.connectRedis()
+                                                    .onComplete(redisConn -> {
+                                                        log.info("test connect redis success");
+                                                        redisConn.close();
                                                     }, e -> {
-                                                        log.error("deploy verticle error {}", e.getMessage(), e);
-                                                    });
+                                                        log.error("connect redis error {}", e.getMessage(), e);
+                                                        vertx.close();
+                                                    })
+                                                    .andThen(redisConn -> {
+                                                        RedisAPI redis = RedisAPI.api(redisStarter.getClient());
+                                                        int platformSystemInstances = Integer.parseInt(env.getString("PLATFORM_SYSTEM_INSTANCES", "1"));
+                                                        vertx.deployVerticle(() -> {
+                                                                            int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
+                                                                            String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
+                                                                            return new PlatformSystemVerticle(env, sqlClient, redis, platformSystemHttpPort, platformSystemHttpHost);
+                                                                        },
+                                                                        new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
+                                                                .onComplete(s -> {
+                                                                    log.info("PlatformSystem deploy success cost {} ms", (System.currentTimeMillis() - currentTimeMillis));
+                                                                }, e -> {
+                                                                    log.error("deploy verticle error {}", e.getMessage(), e);
+                                                                });
+                                                    })
+                                            ;
                                         })
                                 ;
                             })

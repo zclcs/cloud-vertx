@@ -49,27 +49,28 @@ public class VerifyCodeHandler implements Handler<RoutingContext> {
         SpecVerifyCode specVerifyCode = new SpecVerifyCode(120, 40, 4);
         String code = specVerifyCode.text();
         String expireTime = String.valueOf(120 + new Random().nextLong(10) + 1L);
-        redis.set(List.of(String.format(RedisPrefix.VERIFY_CODE_PREFIX, randomStr), code, "EX", expireTime)).onComplete(ar -> {
-            try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-                specVerifyCode.out(output);
-                Buffer buffer = Buffer.buffer(output.toByteArray());
-                ctx.response()
-                        .putHeader("Content-Type", "image/png")
-                        .putHeader("Content-Length", String.valueOf(buffer.length()))
-                        .write(buffer).onComplete(arr -> {
-                            if (arr.succeeded()) {
-                                ctx.response().end();
-                            } else {
-                                RoutingContextUtil.error(ctx, "验证码生成失败");
-                            }
-                        });
-            } catch (IOException e) {
-                RoutingContextUtil.error(ctx, "验证码生成失败");
-            }
-        }, e -> {
-            log.error("验证码生成失败", e);
-            RoutingContextUtil.error(ctx, "验证码生成失败");
-        });
+        redis.set(List.of(String.format(RedisPrefix.VERIFY_CODE_PREFIX, randomStr), code, "EX", expireTime))
+                .onComplete(ar -> {
+                    try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                        specVerifyCode.out(output);
+                        Buffer buffer = Buffer.buffer(output.toByteArray());
+                        ctx.response()
+                                .putHeader("Content-Type", "image/png")
+                                .putHeader("Content-Length", String.valueOf(buffer.length()))
+                                .write(buffer).onComplete(arr -> {
+                                    if (arr.succeeded()) {
+                                        ctx.response().end();
+                                    } else {
+                                        RoutingContextUtil.error(ctx, "验证码生成失败");
+                                    }
+                                });
+                    } catch (IOException e) {
+                        RoutingContextUtil.error(ctx, "验证码生成失败");
+                    }
+                }, e -> {
+                    log.error("验证码生成失败", e);
+                    RoutingContextUtil.error(ctx, "验证码生成失败");
+                });
 
     }
 

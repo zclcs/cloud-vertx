@@ -20,7 +20,7 @@ public class RouterUtil {
      * @return ArrayList<VueRouter < T>>
      */
     public static <T> List<VueRouter<T>> buildVueRouter(List<VueRouter<T>> routes) {
-        if (routes == null) {
+        if (routes == null || routes.isEmpty()) {
             return null;
         }
         List<VueRouter<T>> topRoutes = new ArrayList<>();

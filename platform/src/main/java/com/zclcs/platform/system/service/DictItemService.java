@@ -1,9 +1,9 @@
 package com.zclcs.platform.system.service;
 
 import com.zclcs.cloud.core.bean.Tree;
+import com.zclcs.common.core.constant.StringPool;
 import com.zclcs.platform.system.dao.cache.DictItemCacheVo;
 import com.zclcs.platform.system.dao.vo.DictItemTreeVo;
-import com.zclcs.platform.system.dao.vo.DictItemVo;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -24,22 +24,60 @@ public interface DictItemService {
     Future<List<Tree<DictItemTreeVo>>> tree(String dictName);
 
     /**
-     * 获取字典树
+     * 根据字典名称获取字典列表
      *
-     * @param dictItemVo dictItemVo
-     * @return 字典树
+     * @param dictItemCacheVo 字典名称
+     * @return 字典列表
      */
-    Future<List<Tree<DictItemTreeVo>>> findDictItemTree(DictItemVo dictItemVo);
+    Future<List<DictItemCacheVo>> findDictItemCacheVoList(DictItemCacheVo dictItemCacheVo);
 
     /**
-     * 根据字典名称获取字典列表
+     * 根据字典名称获取字典列表缓存
      *
      * @param dictName 字典名称
      * @return 字典列表
      */
-    Future<List<DictItemCacheVo>> findByDictName(String dictName);
+    Future<List<DictItemCacheVo>> findDictCacheByDictName(String dictName);
 
-    Future<List<DictItemCacheVo>> findByDictNameCache(String dictName);
+    /**
+     * 根据字典名称和字典值获取字典标题
+     *
+     * @param dictName 字典名称
+     * @param value    字典值
+     * @return 字典标题
+     */
+    default Future<String> getDictTitle(String dictName, String value) {
+        return findDictCacheByDictNameAndValue(dictName, value)
+                .compose(dictItemCacheVo -> dictItemCacheVo == null ? Future.succeededFuture(StringPool.EMPTY) : Future.succeededFuture(dictItemCacheVo.getTitle()));
+    }
+
+    /**
+     * 根据字典名称和字典值获取字典缓存
+     *
+     * @param dictName 字典名称
+     * @param value    字典值
+     * @return 字典缓存
+     */
+    Future<DictItemCacheVo> findDictCacheByDictNameAndValue(String dictName, String value);
+
+    /**
+     * 根据字典名称和父级字典值获取字典缓存
+     *
+     * @param dictName    字典名称
+     * @param parentValue 父级字典值
+     * @return 字典缓存
+     */
+    Future<List<DictItemCacheVo>> findDictCacheByDictNameAndParentValue(String dictName, String parentValue);
+
+    /**
+     * 根据字典名称和父级字典值和字典值获取字典缓存
+     *
+     * @param dictName    字典名称
+     * @param parentValue 父级字典值
+     * @param value       字典值
+     * @return 字典缓存
+     */
+    Future<DictItemCacheVo> findDictCacheByDictNameAndParentValueAndValue(String dictName, String parentValue, String value);
 
     /**
      * 验证字典是否重复

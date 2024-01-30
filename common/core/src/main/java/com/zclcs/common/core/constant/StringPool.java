@@ -95,4 +95,9 @@ public interface StringPool {
      * 字符串常量：艾特 {@code "@"}
      */
     String AT = "@";
+
+    /**
+     * 字符串常量：艾特 {@code ""}
+     */
+    String EMPTY = "";
 }

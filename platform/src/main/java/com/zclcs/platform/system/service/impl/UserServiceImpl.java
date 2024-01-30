@@ -3,6 +3,7 @@ package com.zclcs.platform.system.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.zclcs.cloud.core.base.Page;
 import com.zclcs.cloud.core.base.PageAo;
+import com.zclcs.cloud.core.constant.DictName;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.cloud.core.constant.YesOrNo;
 import com.zclcs.common.config.utils.JsonUtil;
@@ -17,9 +18,11 @@ import com.zclcs.platform.system.dao.router.RouterMeta;
 import com.zclcs.platform.system.dao.router.VueRouter;
 import com.zclcs.platform.system.dao.vo.UserVo;
 import com.zclcs.platform.system.dao.vo.UserVoRowMapper;
+import com.zclcs.platform.system.service.DictItemService;
 import com.zclcs.platform.system.service.RoleService;
 import com.zclcs.platform.system.service.UserService;
 import com.zclcs.platform.system.utils.RouterUtil;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.redis.client.RedisAPI;
@@ -41,11 +44,13 @@ public class UserServiceImpl implements UserService {
     private final RoleService roleService;
     private final SqlClient sqlClient;
     private final RedisAPI redis;
+    private final DictItemService dictItemService;
 
     private final Duration redisExpire = Duration.ofDays(1);
 
-    public UserServiceImpl(RoleService roleService, SqlClient sqlClient, RedisAPI redis) {
+    public UserServiceImpl(RoleService roleService, DictItemService dictItemService, SqlClient sqlClient, RedisAPI redis) {
         this.roleService = roleService;
+        this.dictItemService = dictItemService;
         this.sqlClient = sqlClient;
         this.redis = redis;
     }
@@ -252,16 +257,42 @@ public class UserServiceImpl implements UserService {
                 .mapTo(UserVoRowMapper.INSTANCE)
                 .execute(params)
                 .flatMap(rows -> {
+                    List<UserVo> list = new ArrayList<>();
                     if (rows != null && rows.size() > 0) {
-                        List<UserVo> list = new ArrayList<>();
                         rows.forEach(list::add);
-                        return Future.succeededFuture(new Page<>(pageNum, pageSize, (long) rows.size(), list));
+                    }
+                    return Future.succeededFuture(list);
+                })
+                .compose(list -> {
+                    if (!list.isEmpty()) {
+                        return setDict(list).compose(v -> Future.succeededFuture(new Page<>(pageNum, pageSize, (long) list.size(), list)));
                     }
                     return Future.succeededFuture(new Page<>(pageNum, pageSize));
                 })
                 ;
     }
 
+    private Future<CompositeFuture> setDict(List<UserVo> list) {
+        List<Future<Void>> futures = new ArrayList<>();
+        list.forEach(user -> {
+            futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_STATUS, user.getStatus())
+                    .compose(title -> {
+                        user.setStatusText(title);
+                        return Future.succeededFuture();
+                    }));
+            futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_GENDER, user.getGender())
+                    .compose(title -> {
+                        user.setGenderText(title);
+                        return Future.succeededFuture();
+                    }));
+            futures.add(dictItemService.getDictTitle(DictName.YES_NO, user.getIsTab())
+                    .compose(title -> {
+                        user.setIsTabText(title);
+                        return Future.succeededFuture();
+                    }));
+        });
+        return Future.all(futures);
+    }
 
     private String getUserPageSql(UserVo userVo) {
         String sql = """
@@ -269,11 +300,11 @@ public class UserServiceImpl implements UserService {
                 	su.user_id,
                 	su.username,
                 	su.real_name,
-                	su.PASSWORD,
+                	su.password,
                 	su.dept_id,
                 	su.email,
                 	su.mobile,
-                	su.STATUS,
+                	su.status,
                 	su.last_login_time,
                 	su.gender,
                 	su.is_tab,

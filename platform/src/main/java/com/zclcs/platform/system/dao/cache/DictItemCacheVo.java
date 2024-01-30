@@ -2,10 +2,13 @@ package com.zclcs.platform.system.dao.cache;
 
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
+import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 字典 CacheVo
@@ -15,6 +18,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@JsonGen
 public class DictItemCacheVo implements Serializable {
 
     @Serial
@@ -71,6 +75,27 @@ public class DictItemCacheVo implements Serializable {
     private String isDisabled;
 
     public DictItemCacheVo() {
+    }
+
+    public DictItemCacheVo(String dictName) {
+        this.dictName = dictName;
+    }
+
+    public DictItemCacheVo(String dictName, String value) {
+        this.dictName = dictName;
+        this.value = value;
+    }
+
+    public DictItemCacheVo(String dictName, String parentValue, String value) {
+        this.dictName = dictName;
+        this.parentValue = parentValue;
+        this.value = value;
+    }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        DictItemCacheVoConverter.toJson(this, map);
+        return map;
     }
 
     public Long getId() {

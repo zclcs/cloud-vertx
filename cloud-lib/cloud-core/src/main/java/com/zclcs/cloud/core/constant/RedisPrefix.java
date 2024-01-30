@@ -18,6 +18,12 @@ public class RedisPrefix {
 
     public static final String HTTP_BLACK_LIST_PREFIX = "http:black:list";
 
-    public static final String DICT_PREFIX = "dict:%s";
+    public static final String DICT_PREFIX = "dict:n:%s";
+
+    public static final String DICT_VALUE_PREFIX = "dict:n:%s:v:%s";
+
+    public static final String DICT_PARENT_VALUE_AND_VALUE_PREFIX = "dict:n:%s:p:%s:v:%s";
+
+    public static final String DICT_PARENT_VALUE_PREFIX = "dict:n:%s:p:%s";
 
 }
