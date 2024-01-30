@@ -64,7 +64,23 @@ public class UserServiceImpl implements UserService {
     @Override
     public Future<User> getUser(String username) {
         return SqlTemplate.forQuery(sqlClient, """
-                        SELECT * FROM system_user WHERE username = #{loginId}
+                        SELECT 
+                            su.user_id,
+                            su.username,
+                            su.real_name,
+                            su.password,
+                            su.dept_id,
+                            su.email,
+                            su.mobile,
+                            su.status,
+                            su.last_login_time,
+                            su.gender,
+                            su.is_tab,
+                            su.theme,
+                            su.avatar,
+                            su.description
+                        FROM system_user 
+                        WHERE username = #{loginId}
                         """)
                 .mapTo(UserRowMapper.INSTANCE)
                 .execute(Collections.singletonMap("loginId", username))
