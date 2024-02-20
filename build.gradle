@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        vertxVersion = "4.5.1"
+        vertxVersion = "4.5.3"
         shadowJarVersion = "7.1.2"
         log4j2Version = "2.22.0"
         slf4jVersion = "2.0.9"

@@ -106,7 +106,7 @@ public class MysqlClientStarter {
         for (String procedure : Procedures.PROCEDURES) {
             futures.add(sqlConnection.query(procedure).execute());
         }
-        List<String> dirs = vertx.fileSystem().readDirBlocking("sql");
+        List<String> dirs = vertx.fileSystem().readDirBlocking("sql").stream().sorted().toList();
         for (String dir : dirs) {
             if (dir.endsWith(".sql")) {
                 String statements = vertx.fileSystem().readFileBlocking(dir).toString();

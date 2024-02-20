@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * @author zclcs
  */
-public class RouterUtil {
+public class VueRouterUtil {
 
 
     /**

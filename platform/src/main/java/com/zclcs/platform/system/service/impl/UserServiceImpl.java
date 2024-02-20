@@ -21,7 +21,7 @@ import com.zclcs.platform.system.dao.vo.UserVoRowMapper;
 import com.zclcs.platform.system.service.DictItemService;
 import com.zclcs.platform.system.service.RoleService;
 import com.zclcs.platform.system.service.UserService;
-import com.zclcs.platform.system.utils.RouterUtil;
+import com.zclcs.platform.system.utils.VueRouterUtil;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
@@ -79,8 +79,8 @@ public class UserServiceImpl implements UserService {
                             su.theme,
                             su.avatar,
                             su.description
-                        FROM system_user 
-                        WHERE username = #{loginId}
+                        FROM system_user su
+                        WHERE su.username = #{loginId}
                         """)
                 .mapTo(UserRowMapper.INSTANCE)
                 .execute(Collections.singletonMap("loginId", username))
@@ -231,7 +231,7 @@ public class UserServiceImpl implements UserService {
                                                         menu.getCurrentActiveMenu()));
                                                 vueRouters.add(route);
                                             });
-                                            return Future.succeededFuture(RouterUtil.buildVueRouter(vueRouters));
+                                            return Future.succeededFuture(VueRouterUtil.buildVueRouter(vueRouters));
                                         })
                                         .compose(dv -> {
                                             String expireTime = String.valueOf(redisExpire.getSeconds() + new Random().nextLong(100) + 1L);
@@ -327,6 +327,7 @@ public class UserServiceImpl implements UserService {
                 	su.theme,
                 	su.avatar,
                 	su.description,
+                	su.create_at,
                 	GROUP_CONCAT( distinct sr.role_id ) role_id_string,
                 	GROUP_CONCAT( distinct sr.role_name ) role_name_string,
                 	GROUP_CONCAT( distinct sudp.dept_id ) dept_id_string
@@ -352,7 +353,8 @@ public class UserServiceImpl implements UserService {
                 	su.is_tab,
                 	su.theme,
                 	su.avatar,
-                	su.description
+                	su.description,
+                	su.create_at
                 """;
         String condition = "";
         if (StringsUtil.isNotBlank(userVo.getUsername())) {

@@ -16,8 +16,7 @@ public class VueRouter<T> implements Serializable {
 
     @Serial
     private static final long serialVersionUID = -3327478146308500708L;
-
-
+    
     private Long id;
 
     private String code;

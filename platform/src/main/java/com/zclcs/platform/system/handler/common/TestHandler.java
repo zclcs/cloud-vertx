@@ -1,4 +1,4 @@
-package com.zclcs.platform.system.handler;
+package com.zclcs.platform.system.handler.common;
 
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.platform.system.service.UserService;

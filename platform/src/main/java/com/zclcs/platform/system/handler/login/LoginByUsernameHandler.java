@@ -1,4 +1,4 @@
-package com.zclcs.platform.system.handler;
+package com.zclcs.platform.system.handler.login;
 
 import com.zclcs.cloud.core.constant.LoginType;
 import com.zclcs.cloud.core.constant.RedisPrefix;
@@ -130,6 +130,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
                         RoutingContextUtil.error(ctx, "用户名或密码错误");
                     }
                 }, e -> {
+                    log.error("message {}", e.getMessage(), e);
                     RoutingContextUtil.error(ctx, "无法获取用户信息");
                 })
         ;
