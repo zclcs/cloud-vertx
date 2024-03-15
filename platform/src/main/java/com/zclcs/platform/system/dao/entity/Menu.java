@@ -1,9 +1,11 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -17,6 +19,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_menu")
 public class Menu extends BaseEntity implements Serializable {
 
     @Serial
@@ -25,103 +28,103 @@ public class Menu extends BaseEntity implements Serializable {
     /**
      * 目录/菜单/按钮id
      */
-    @Column(name = "menu_id")
+    @TableId(name = "menu_id")
     private Long menuId;
 
     /**
      * 目录/菜单/按钮编码（唯一值）
      */
-    @Column(name = "menu_code")
+    @TableColumn(name = "menu_code")
     private String menuCode;
 
     /**
      * 上级目录/菜单编码
      */
-    @Column(name = "parent_code")
+    @TableColumn(name = "parent_code")
     private String parentCode;
 
     /**
      * 目录/菜单/按钮名称
      */
-    @Column(name = "menu_name")
+    @TableColumn(name = "menu_name")
     private String menuName;
 
     /**
      * 页面缓存名称
      */
-    @Column(name = "keep_alive_name")
+    @TableColumn(name = "keep_alive_name")
     private String keepAliveName;
 
     /**
      * 对应路由path
      */
-    @Column(name = "path")
+    @TableColumn(name = "path")
     private String path;
 
     /**
      * 对应路由组件component
      */
-    @Column(name = "component")
+    @TableColumn(name = "component")
     private String component;
 
     /**
      * 打开目录重定向的子菜单
      */
-    @Column(name = "redirect")
+    @TableColumn(name = "redirect")
     private String redirect;
 
     /**
      * 权限标识
      */
-    @Column(name = "perms")
+    @TableColumn(name = "perms")
     private String perms;
 
     /**
      * 图标
      */
-    @Column(name = "icon")
+    @TableColumn(name = "icon")
     private String icon;
 
     /**
      * 类型 @@system_menu.type
      */
-    @Column(name = "type")
+    @TableColumn(name = "type")
     private String type;
 
     /**
      * 是否隐藏菜单 @@yes_no
      */
-    @Column(name = "hide_menu")
+    @TableColumn(name = "hide_menu")
     private String hideMenu;
 
     /**
      * 是否忽略KeepAlive缓存 @@yes_no
      */
-    @Column(name = "ignore_keep_alive")
+    @TableColumn(name = "ignore_keep_alive")
     private String ignoreKeepAlive;
 
     /**
      * 隐藏该路由在面包屑上面的显示 @@yes_no
      */
-    @Column(name = "hide_breadcrumb")
+    @TableColumn(name = "hide_breadcrumb")
     private String hideBreadcrumb;
 
     /**
      * 隐藏所有子菜单 @@yes_no
      */
-    @Column(name = "hide_children_in_menu")
+    @TableColumn(name = "hide_children_in_menu")
     private String hideChildrenInMenu;
 
     /**
      * 当前激活的菜单。用于配置详情页时左侧激活的菜单路径
      */
-    @Column(name = "current_active_menu")
+    @TableColumn(name = "current_active_menu")
     private String currentActiveMenu;
 
     /**
      * 排序
      */
-    @Column(name = "order_num")
+    @TableColumn(name = "order_num")
     private Double orderNum;
 
     public Menu() {

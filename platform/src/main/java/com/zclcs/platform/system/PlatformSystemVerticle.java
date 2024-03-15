@@ -12,9 +12,7 @@ import com.zclcs.platform.system.handler.common.TestHandler;
 import com.zclcs.platform.system.handler.common.VerifyCodeHandler;
 import com.zclcs.platform.system.handler.dept.DeptTreeHandler;
 import com.zclcs.platform.system.handler.login.LoginByUsernameHandler;
-import com.zclcs.platform.system.handler.user.UserPageHandler;
-import com.zclcs.platform.system.handler.user.UserPermissionsHandler;
-import com.zclcs.platform.system.handler.user.UserRoutersHandler;
+import com.zclcs.platform.system.handler.user.*;
 import com.zclcs.platform.system.security.DefaultStintLogic;
 import com.zclcs.platform.system.security.HasPermissionLogic;
 import com.zclcs.platform.system.service.DeptService;
@@ -36,7 +34,7 @@ import io.vertx.json.schema.SchemaParser;
 import io.vertx.json.schema.SchemaRouter;
 import io.vertx.json.schema.SchemaRouterOptions;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +49,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final RedisAPI redis;
 
-    private final SqlClient sqlClient;
+    private final Pool pool;
 
     private final JsonObject env;
 
@@ -59,9 +57,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
     private final String httpHost;
 
-    public PlatformSystemVerticle(JsonObject env, SqlClient sqlClient, RedisAPI redis, int httpPort, String httpHost) {
+    public PlatformSystemVerticle(JsonObject env, Pool pool, RedisAPI redis, int httpPort, String httpHost) {
         this.env = env;
-        this.sqlClient = sqlClient;
+        this.pool = pool;
         this.redis = redis;
         this.httpPort = httpPort;
         this.httpHost = httpHost;
@@ -119,13 +117,13 @@ public class PlatformSystemVerticle extends AbstractVerticle {
                 SchemaRouter.create(vertx, new SchemaRouterOptions())
         );
         TokenProvider tokenProvider = new RedisTokenLogic(redis);
-        DefaultStintLogic stintProvider = new DefaultStintLogic(config(), redis, sqlClient);
+        DefaultStintLogic stintProvider = new DefaultStintLogic(config(), redis, pool);
         DefaultRateLimiterClient defaultRateLimiterClient = new DefaultRateLimiterClient(vertx, redis);
-        DictItemService dictItemService = new DictItemServiceImpl(sqlClient, redis);
-        RoleService roleService = new RoleServiceImpl(sqlClient);
-        DeptService deptService = new DeptServiceImpl(sqlClient);
-        UserService userService = new UserServiceImpl(roleService, dictItemService, sqlClient, redis);
-        PermissionProvider hasPermissionLogic = new HasPermissionLogic("user:view", userService);
+        DictItemService dictItemService = new DictItemServiceImpl(pool, redis);
+        RoleService roleService = new RoleServiceImpl(pool);
+        DeptService deptService = new DeptServiceImpl(pool);
+        UserService userService = new UserServiceImpl(roleService, dictItemService, pool, redis);
+        PermissionProvider hasPermissionLogic = new HasPermissionLogic(userService, "user:view");
         router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
         VerifyCodeHandler verifyCodeHandler = new VerifyCodeHandler(redis, parser);
         router.get("/code").handler(verifyCodeHandler.validationHandler).handler(verifyCodeHandler);
@@ -133,6 +131,8 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         router.get("/user/permissions").handler(new UserPermissionsHandler(userService));
         router.get("/user/routers").handler(new UserRoutersHandler(userService));
         router.get("/user").handler(new UserPageHandler(hasPermissionLogic, userService));
+        router.post("/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
+        router.post("/user/batch").handler(new AddUserBatchHandler(new HasPermissionLogic(userService, "user:add:batch"), userService));
         router.get("/dept/tree").handler(new DeptTreeHandler(hasPermissionLogic, deptService));
         router.get("/test").handler(new TestHandler(userService));
         router.get("/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));

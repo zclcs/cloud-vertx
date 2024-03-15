@@ -1,5 +1,8 @@
 package com.zclcs.common.security.provider;
 
+import com.zclcs.common.security.bean.TokenInfo;
+import com.zclcs.common.security.constant.LoginDevice;
+import com.zclcs.common.security.constant.LoginType;
 import io.vertx.core.Future;
 
 import java.time.Duration;
@@ -12,19 +15,20 @@ public interface TokenProvider {
     /**
      * 生成token并存储
      *
-     * @param loginId   用户实体（用户名、手机号等等）
-     * @param loginType 登录类型（pc、app等等）
+     * @param loginId     登录id 值可能是用户名或手机号等等
+     * @param loginType   登录类型 {@link LoginType}
+     * @param loginDevice 登录设备 {@link LoginDevice}
      * @return token
      */
-    Future<String> generateAndStoreToken(String loginId, String loginType);
+    Future<String> generateAndStoreToken(String loginId, LoginType loginType, LoginDevice loginDevice);
 
     /**
      * 验证token
      *
      * @param token token
-     * @return 用户实体（用户名、手机号等等）
+     * @return {@link TokenInfo}
      */
-    Future<String> verifyToken(String token);
+    Future<TokenInfo> verifyToken(String token);
 
     /**
      * token过期时间

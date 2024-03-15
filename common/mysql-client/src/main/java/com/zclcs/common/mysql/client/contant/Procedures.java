@@ -1,5 +1,8 @@
 package com.zclcs.common.mysql.client.contant;
 
+/**
+ * @author zclcs
+ */
 public class Procedures {
 
     public static final String[] PROCEDURES = new String[]{

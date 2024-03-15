@@ -2,9 +2,11 @@ package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.core.bean.HttpRateLimitList;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -18,6 +20,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_rate_limit_rule")
 public class RateLimitRule extends BaseEntity implements Serializable {
 
     @Serial
@@ -26,49 +29,49 @@ public class RateLimitRule extends BaseEntity implements Serializable {
     /**
      * 限流规则id
      */
-    @Column(name = "rate_limit_rule_id")
+    @TableId(name = "rate_limit_rule_id")
     private Long rateLimitRuleId;
 
     /**
      * 请求uri（不支持通配符）
      */
-    @Column(name = "request_uri")
+    @TableColumn(name = "request_uri")
     private String requestUri;
 
     /**
      * 请求方法，如果为ALL则表示对所有方法生效
      */
-    @Column(name = "request_method")
+    @TableColumn(name = "request_method")
     private String requestMethod;
 
     /**
      * 限制时间起
      */
-    @Column(name = "limit_from")
+    @TableColumn(name = "limit_from")
     private String limitFrom;
 
     /**
      * 限制时间止
      */
-    @Column(name = "limit_to")
+    @TableColumn(name = "limit_to")
     private String limitTo;
 
     /**
      * 限制次数
      */
-    @Column(name = "rate_limit_count")
+    @TableColumn(name = "rate_limit_count")
     private Integer rateLimitCount;
 
     /**
      * 时间周期（单位秒）
      */
-    @Column(name = "interval_sec")
+    @TableColumn(name = "interval_sec")
     private String intervalSec;
 
     /**
      * 规则状态 默认 1 @@enable_disable
      */
-    @Column(name = "rule_status")
+    @TableColumn(name = "rule_status")
     private String ruleStatus;
 
     public RateLimitRule() {

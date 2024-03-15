@@ -1,7 +1,12 @@
 package com.zclcs.cloud.lib.security.logic;
 
 import com.zclcs.cloud.core.constant.RedisPrefix;
+import com.zclcs.common.config.utils.JsonUtil;
+import com.zclcs.common.core.utils.StringsUtil;
 import com.zclcs.common.local.cache.LocalCache;
+import com.zclcs.common.security.bean.TokenInfo;
+import com.zclcs.common.security.constant.LoginDevice;
+import com.zclcs.common.security.constant.LoginType;
 import com.zclcs.common.security.provider.TokenProvider;
 import io.vertx.core.Future;
 import io.vertx.redis.client.RedisAPI;
@@ -23,7 +28,7 @@ public class RedisTokenLogic implements TokenProvider {
 
     private final RedisAPI redis;
 
-    private final LocalCache<String, String> tokenCache;
+    private final LocalCache<String, TokenInfo> tokenCache;
 
     private final Duration redisTokenExpire = Duration.ofDays(1);
 
@@ -33,11 +38,12 @@ public class RedisTokenLogic implements TokenProvider {
     }
 
     @Override
-    public Future<String> generateAndStoreToken(String loginId, String loginType) {
+    public Future<String> generateAndStoreToken(String loginId, LoginType loginType, LoginDevice loginDevice) {
         String token = UUID.randomUUID().toString().replace("-", "");
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
         String expireTime = String.valueOf(redisTokenExpire.getSeconds() + new Random().nextLong(100) + 1L);
-        return redis.set(Arrays.asList(k, loginId, "EX", expireTime)).compose(rv -> {
+        TokenInfo tokenInfoValue = new TokenInfo(loginId, loginType, loginDevice);
+        return redis.set(Arrays.asList(k, JsonUtil.toJson(tokenInfoValue), "EX", expireTime)).compose(rv -> {
             if (rv != null) {
                 return Future.succeededFuture(token);
             } else {
@@ -47,7 +53,7 @@ public class RedisTokenLogic implements TokenProvider {
     }
 
     @Override
-    public Future<String> verifyToken(String token) {
+    public Future<TokenInfo> verifyToken(String token) {
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
         return tokenCache.getIfPresent(k).compose(v -> {
             if (v != null) {
@@ -55,8 +61,14 @@ public class RedisTokenLogic implements TokenProvider {
             } else {
                 return redis.get(k).compose(rv -> {
                     String redisToken = rv == null ? "" : rv.toString();
-                    tokenCache.put(k, redisToken);
-                    return Future.succeededFuture(redisToken);
+                    TokenInfo value = null;
+                    if (StringsUtil.isNotBlank(redisToken)) {
+                        value = JsonUtil.readValue(redisToken, TokenInfo.class);
+                    } else {
+                        return Future.succeededFuture(null);
+                    }
+                    tokenCache.put(k, value);
+                    return Future.succeededFuture(value);
                 });
             }
         });

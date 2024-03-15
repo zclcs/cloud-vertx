@@ -9,7 +9,6 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.SqlClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,6 @@ public class PlatformApplication extends AbstractVerticle {
                     env = jsonObject.result();
                     MysqlClientStarter mysqlClientStarter = new MysqlClientStarter(vertx, env);
                     Pool pool = mysqlClientStarter.createPool();
-                    SqlClient sqlClient = mysqlClientStarter.createSqlClient();
                     pool.getConnection()
                             .onComplete(mysqlConnection -> {
                                 log.info("test connect mysql success");
@@ -64,7 +62,7 @@ public class PlatformApplication extends AbstractVerticle {
                                                         vertx.deployVerticle(() -> {
                                                                             int platformSystemHttpPort = Integer.parseInt(env.getString("PLATFORM_SYSTEM_HTTP_PORT", "8201"));
                                                                             String platformSystemHttpHost = env.getString("PLATFORM_SYSTEM_HTTP_HOST", "0.0.0.0");
-                                                                            return new PlatformSystemVerticle(env, sqlClient, redis, platformSystemHttpPort, platformSystemHttpHost);
+                                                                            return new PlatformSystemVerticle(env, pool, redis, platformSystemHttpPort, platformSystemHttpHost);
                                                                         },
                                                                         new DeploymentOptions().setConfig(config()).setInstances(platformSystemInstances))
                                                                 .onComplete(s -> {

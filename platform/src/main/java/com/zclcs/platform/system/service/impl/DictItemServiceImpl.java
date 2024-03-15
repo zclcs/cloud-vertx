@@ -4,17 +4,21 @@ import com.zclcs.cloud.core.bean.Tree;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.cloud.core.utils.TreeUtil;
 import com.zclcs.common.config.utils.JsonUtil;
+import com.zclcs.common.core.utils.BeanToMapUtil;
 import com.zclcs.common.core.utils.StringsUtil;
 import com.zclcs.common.local.cache.LocalCache;
 import com.zclcs.platform.system.dao.cache.DictItemCacheVo;
 import com.zclcs.platform.system.dao.cache.DictItemCacheVoRowMapper;
+import com.zclcs.platform.system.dao.entity.DictItem;
+import com.zclcs.platform.system.dao.entity.DictItemRowMapper;
 import com.zclcs.platform.system.dao.vo.DictItemTreeVo;
 import com.zclcs.platform.system.dao.vo.DictItemVo;
 import com.zclcs.platform.system.dao.vo.DictItemVoRowMapper;
 import com.zclcs.platform.system.service.DictItemService;
+import com.zclcs.sql.helper.service.impl.BaseSqlService;
 import io.vertx.core.Future;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.time.Duration;
@@ -23,15 +27,16 @@ import java.util.*;
 /**
  * @author zclcs
  */
-public class DictItemServiceImpl implements DictItemService {
+public class DictItemServiceImpl extends BaseSqlService<DictItem> implements DictItemService {
 
-    private final SqlClient sqlClient;
+    private final Pool pool;
     private final RedisAPI redis;
 
     private final Duration redisExpire = Duration.ofDays(1);
 
-    public DictItemServiceImpl(SqlClient sqlClient, RedisAPI redis) {
-        this.sqlClient = sqlClient;
+    public DictItemServiceImpl(Pool pool, RedisAPI redis) {
+        super(pool, DictItemRowMapper.INSTANCE, DictItem.class);
+        this.pool = pool;
         this.redis = redis;
     }
 
@@ -62,7 +67,7 @@ public class DictItemServiceImpl implements DictItemService {
                 where `dict_name` = #{dictName}
                 order by sorted
                 """;
-        return SqlTemplate.forQuery(sqlClient, sql)
+        return SqlTemplate.forQuery(pool, sql)
                 .mapTo(DictItemVoRowMapper.INSTANCE)
                 .execute(Collections.singletonMap("dictName", dictName))
                 .flatMap(rows -> {
@@ -115,9 +120,9 @@ public class DictItemServiceImpl implements DictItemService {
         if (StringsUtil.isNotBlank(condition)) {
             sql += condition;
         }
-        return SqlTemplate.forQuery(sqlClient, sql)
+        return SqlTemplate.forQuery(pool, sql)
                 .mapTo(DictItemCacheVoRowMapper.INSTANCE)
-                .execute(dictItemCacheVo.toMap())
+                .execute(BeanToMapUtil.beanToMap(dictItemCacheVo))
                 .flatMap(rows -> {
                     List<DictItemCacheVo> dictItemCacheVos = new ArrayList<>();
                     if (rows.size() > 0) {
@@ -281,7 +286,7 @@ public class DictItemServiceImpl implements DictItemService {
         Map<String, Object> params = new HashMap<>(2);
         params.put("dictName", dictName);
         params.put("value", value);
-        return SqlTemplate.forQuery(sqlClient, """
+        return SqlTemplate.forQuery(pool, """
                         SELECT id FROM `system_dict_item`
                         WHERE `dict_name` = #{dictName}
                         AND `value` = #{value}

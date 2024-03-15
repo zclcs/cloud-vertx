@@ -1,11 +1,11 @@
 package com.zclcs.platform.system.handler.user;
 
-import com.zclcs.cloud.core.base.PageAo;
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.BasePermissionHandler;
 import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.platform.system.dao.vo.UserVo;
 import com.zclcs.platform.system.service.UserService;
+import com.zclcs.sql.helper.statement.bean.PageAo;
 import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

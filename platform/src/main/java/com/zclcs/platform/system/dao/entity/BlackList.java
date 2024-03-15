@@ -2,9 +2,11 @@ package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.core.bean.HttpBlackList;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -18,6 +20,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_black_list")
 public class BlackList extends BaseEntity implements Serializable {
 
     @Serial
@@ -26,49 +29,49 @@ public class BlackList extends BaseEntity implements Serializable {
     /**
      * 黑名单id
      */
-    @Column(name = "black_id")
+    @TableId(name = "black_id")
     private Long blackId;
 
     /**
      * 黑名单ip
      */
-    @Column(name = "black_ip")
+    @TableColumn(name = "black_ip")
     private String blackIp;
 
     /**
      * 请求uri（支持通配符）
      */
-    @Column(name = "request_uri")
+    @TableColumn(name = "request_uri")
     private String requestUri;
 
     /**
      * 请求方法，如果为ALL则表示对所有方法生效
      */
-    @Column(name = "request_method")
+    @TableColumn(name = "request_method")
     private String requestMethod;
 
     /**
      * 限制时间起
      */
-    @Column(name = "limit_from")
+    @TableColumn(name = "limit_from")
     private String limitFrom;
 
     /**
      * 限制时间止
      */
-    @Column(name = "limit_to")
+    @TableColumn(name = "limit_to")
     private String limitTo;
 
     /**
      * ip对应地址
      */
-    @Column(name = "location")
+    @TableColumn(name = "location")
     private String location;
 
     /**
      * 黑名单状态 默认 1 @@enable_disable
      */
-    @Column(name = "black_status")
+    @TableColumn(name = "black_status")
     private String blackStatus;
 
     public BlackList() {

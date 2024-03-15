@@ -7,9 +7,10 @@ import com.zclcs.common.local.cache.LocalCache;
 import com.zclcs.platform.system.dao.entity.RateLimitRule;
 import com.zclcs.platform.system.dao.entity.RateLimitRuleRowMapper;
 import com.zclcs.platform.system.service.RateLimitRuleService;
+import com.zclcs.sql.helper.service.impl.BaseSqlService;
 import io.vertx.core.Future;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.time.Duration;
@@ -18,24 +19,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public class RateLimitRuleServiceImpl implements RateLimitRuleService {
+/**
+ * @author zclcs
+ */
+public class RateLimitRuleServiceImpl extends BaseSqlService<RateLimitRule> implements RateLimitRuleService {
 
     private final RedisAPI redis;
 
     private final Duration redisExpire = Duration.ofDays(1);
 
-    private final SqlClient sqlClient;
+    private final Pool pool;
 
-    public RateLimitRuleServiceImpl(RedisAPI redis, SqlClient sqlClient) {
+    public RateLimitRuleServiceImpl(RedisAPI redis, Pool pool) {
+        super(pool, RateLimitRuleRowMapper.INSTANCE, RateLimitRule.class);
         this.redis = redis;
-        this.sqlClient = sqlClient;
+        this.pool = pool;
     }
 
     private final LocalCache<String, List<HttpRateLimitList>> rateLimitRuleListCache = new LocalCache<>(5000, 10, Duration.ofSeconds(5));
 
     @Override
     public Future<List<RateLimitRule>> getRateEnableLimitRule() {
-        return SqlTemplate.forQuery(sqlClient, """
+        return SqlTemplate.forQuery(pool, """
                         SELECT 
                              `rate_limit_rule_id`, 
                              `request_uri`, 

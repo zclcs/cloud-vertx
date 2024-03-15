@@ -10,4 +10,9 @@ public class CommonCore {
     public static final String HTTP_METHOD_ALL = "ALL";
 
     public static final String HTTP_PATH_ALL = "/**";
+
+    /**
+     * 默认头像
+     */
+    public static final String DEFAULT_AVATAR = "default.jpg";
 }

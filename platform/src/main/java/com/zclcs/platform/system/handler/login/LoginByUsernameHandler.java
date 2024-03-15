@@ -1,10 +1,11 @@
 package com.zclcs.platform.system.handler.login;
 
-import com.zclcs.cloud.core.constant.LoginType;
 import com.zclcs.cloud.core.constant.RedisPrefix;
 import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.common.core.security.BCrypt;
 import com.zclcs.common.core.utils.AESUtil;
+import com.zclcs.common.security.constant.LoginDevice;
+import com.zclcs.common.security.constant.LoginType;
 import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.platform.system.dao.vo.LoginVo;
 import com.zclcs.platform.system.dao.vo.UserTokenVo;
@@ -91,7 +92,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
     }
 
     private void checkUser(RoutingContext ctx, String username, String password) {
-        userService.getUserCache(username)
+        userService.getUserCacheByName(username)
                 .onComplete(user -> {
                     if (user != null) {
                         if ("0".equals(user.getStatus())) {
@@ -110,7 +111,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
                             }
                             boolean checkPassword = BCrypt.checkPassword(passwordPlainText, user.getPassword());
                             if (checkPassword) {
-                                tokenProvider.generateAndStoreToken(user.getUsername(), LoginType.PC)
+                                tokenProvider.generateAndStoreToken(user.getUsername(), LoginType.username, LoginDevice.pc)
                                         .onComplete(r -> {
                                             RoutingContextUtil.success(ctx, new UserTokenVo(r, tokenProvider.getRedisTokenExpire().getSeconds(), new LoginVo(user)));
                                         }, e -> {

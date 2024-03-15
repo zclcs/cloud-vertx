@@ -77,7 +77,7 @@
         </root>
 
         <!-- 自定义日志输出控制:开始 -->
-        <!--        <logger name="com.zclcs" level="info"/>-->
+        <logger name="com.zclcs" level="debug"/>
 
     </loggers>
 </configuration>

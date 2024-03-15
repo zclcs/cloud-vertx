@@ -12,12 +12,9 @@ import io.vertx.sqlclient.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.Callable;
 
 /**
  * @author zhouc
@@ -36,13 +33,13 @@ public class MysqlClientStarter {
         this.config = vertx.getOrCreateContext().config();
     }
 
-    public SqlClient createSqlClient() {
-        return MySQLBuilder.client()
-                .with(createPoolOptions())
-                .connectingTo(createConnectOptions())
-                .using(vertx)
-                .build();
-    }
+//    public SqlClient createSqlClient() {
+//        return MySQLBuilder.client()
+//                .with(createPoolOptions())
+//                .connectingTo(createConnectOptions())
+//                .using(vertx)
+//                .build();
+//    }
 
     public Pool createPool() {
         return MySQLBuilder.pool()
@@ -84,21 +81,6 @@ public class MysqlClientStarter {
                 .setConnectionTimeout(Integer.parseInt(mysqlPoolConnectionTimeout))
                 .setIdleTimeout(Integer.parseInt(mysqlPoolIdleTimeout))
                 .setPoolCleanerPeriod(Integer.parseInt(mysqlPoolCleanerPeriod));
-    }
-
-    private Future<Properties> loadDbQueries(String path) {
-        return vertx.executeBlocking(new Callable<>() {
-            @Override
-            public Properties call() throws Exception {
-                var properties = new Properties();
-                try (var is = getClass().getClassLoader().getResourceAsStream("db/queries.xml")) {
-                    properties.loadFromXML(is);
-                } catch (IOException e) {
-                    throw new IOException("resource not found");
-                }
-                return properties;
-            }
-        });
     }
 
     public Future<CompositeFuture> initDb(SqlConnection sqlConnection) {

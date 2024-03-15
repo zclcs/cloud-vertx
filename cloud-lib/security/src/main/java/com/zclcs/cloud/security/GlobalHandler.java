@@ -43,7 +43,7 @@ public class GlobalHandler implements Handler<RoutingContext> {
         doFilter(ctx).onComplete(r -> {
             ctx.next();
         }, e -> {
-            log.error("GlobalHandler {}", e.getMessage());
+            log.error("GlobalHandler {}", e.getMessage(), e);
             if (e instanceof SecurityException securityException) {
                 RoutingContextUtil.error(ctx, securityException.getHttpStatus(), securityException.getMsg());
             } else {
@@ -165,8 +165,10 @@ public class GlobalHandler implements Handler<RoutingContext> {
         } else {
             String finalToken = s.replace("Bearer ", "");
             return tokenProvider.verifyToken(finalToken).compose(data -> {
-                if (StringsUtil.isNotBlank(data)) {
-                    ctx.put(SecurityContext.LOGIN_ID, data);
+                if (data != null) {
+                    ctx.put(SecurityContext.LOGIN_ID, data.getLoginId());
+                    ctx.put(SecurityContext.LOGIN_TYPE, data.getLoginType());
+                    ctx.put(SecurityContext.LOGIN_DEVICE, data.getLoginDevice());
                     ctx.put(SecurityContext.TOKEN, finalToken);
                     return Future.succeededFuture();
                 } else {

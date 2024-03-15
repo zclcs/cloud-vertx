@@ -1,9 +1,11 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -17,6 +19,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_role")
 public class Role extends BaseEntity implements Serializable {
 
     @Serial
@@ -25,25 +28,25 @@ public class Role extends BaseEntity implements Serializable {
     /**
      * 角色id
      */
-    @Column(name = "role_id")
+    @TableId(name = "role_id")
     private Long roleId;
 
     /**
      * 角色编码（唯一值）
      */
-    @Column(name = "role_code")
+    @TableColumn(name = "role_code")
     private String roleCode;
 
     /**
      * 角色名称
      */
-    @Column(name = "role_name")
+    @TableColumn(name = "role_name")
     private String roleName;
 
     /**
      * 角色描述
      */
-    @Column(name = "remark")
+    @TableColumn(name = "remark")
     private String remark;
 
     public Role() {

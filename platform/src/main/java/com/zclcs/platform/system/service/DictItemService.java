@@ -3,7 +3,9 @@ package com.zclcs.platform.system.service;
 import com.zclcs.cloud.core.bean.Tree;
 import com.zclcs.common.core.constant.StringPool;
 import com.zclcs.platform.system.dao.cache.DictItemCacheVo;
+import com.zclcs.platform.system.dao.entity.DictItem;
 import com.zclcs.platform.system.dao.vo.DictItemTreeVo;
+import com.zclcs.sql.helper.service.SqlService;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.List;
  * @author zclcs
  * @since 2023-09-01 20:03:54.686
  */
-public interface DictItemService {
+public interface DictItemService extends SqlService<DictItem> {
 
     /**
      * 获取字典树

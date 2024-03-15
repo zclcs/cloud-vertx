@@ -1,14 +1,11 @@
 package com.zclcs.platform.system.dao.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.zclcs.cloud.core.constant.DictName;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
 import com.zclcs.common.core.constant.StringPool;
 import com.zclcs.common.core.utils.StringsUtil;
-import com.zclcs.platform.system.service.DictItemService;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.core.Future;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -163,18 +160,6 @@ public class UserVo extends BaseEntity implements Serializable {
 
 
     public UserVo() {
-    }
-
-    public UserVo dict(DictItemService dictItemService) {
-        dictItemService.findDictCacheByDictNameAndValue(DictName.SYSTEM_USER_STATUS, status)
-                .flatMap(dictItemCacheVo -> Future.succeededFuture(dictItemCacheVo == null ? StringPool.EMPTY : dictItemCacheVo.getValue())).onSuccess(title -> {
-                    this.statusText = title;
-                });
-        this.genderText = dictItemService.findDictCacheByDictNameAndValue(DictName.SYSTEM_USER_GENDER, gender)
-                .flatMap(dictItemCacheVo -> Future.succeededFuture(dictItemCacheVo == null ? StringPool.EMPTY : dictItemCacheVo.getValue())).result();
-        this.isTabText = dictItemService.findDictCacheByDictNameAndValue(DictName.YES_NO, isTab)
-                .flatMap(dictItemCacheVo -> Future.succeededFuture(dictItemCacheVo == null ? StringPool.EMPTY : dictItemCacheVo.getValue())).result();
-        return this;
     }
 
     public Long getUserId() {

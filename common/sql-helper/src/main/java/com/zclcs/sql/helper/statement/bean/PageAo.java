@@ -1,4 +1,4 @@
-package com.zclcs.cloud.core.base;
+package com.zclcs.sql.helper.statement.bean;
 
 /**
  * 分页实体

@@ -1,8 +1,10 @@
 package com.zclcs.platform.system.service;
 
 import com.zclcs.cloud.core.bean.Tree;
+import com.zclcs.platform.system.dao.entity.Dept;
 import com.zclcs.platform.system.dao.vo.DeptTreeVo;
 import com.zclcs.platform.system.dao.vo.DeptVo;
+import com.zclcs.sql.helper.service.SqlService;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.List;
 /**
  * @author zclcs
  */
-public interface DeptService {
+public interface DeptService extends SqlService<Dept> {
 
     /**
      * 获取部门列表

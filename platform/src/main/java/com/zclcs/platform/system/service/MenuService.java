@@ -2,6 +2,7 @@ package com.zclcs.platform.system.service;
 
 import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.entity.Menu;
+import com.zclcs.sql.helper.service.SqlService;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -9,7 +10,7 @@ import java.util.concurrent.Future;
 /**
  * @author zhouc
  */
-public interface MenuService {
+public interface MenuService extends SqlService<Menu> {
 
     /**
      * 获取用户菜单

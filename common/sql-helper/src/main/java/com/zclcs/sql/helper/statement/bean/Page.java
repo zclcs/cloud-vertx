@@ -1,4 +1,4 @@
-package com.zclcs.cloud.core.base;
+package com.zclcs.sql.helper.statement.bean;
 
 import java.util.Collections;
 import java.util.List;

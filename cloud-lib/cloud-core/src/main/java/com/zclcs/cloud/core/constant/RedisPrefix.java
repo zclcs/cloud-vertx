@@ -1,5 +1,8 @@
 package com.zclcs.cloud.core.constant;
 
+/**
+ * @author zclcs
+ */
 public class RedisPrefix {
 
     public static final String TOKEN_PREFIX = "token:%s";
@@ -7,6 +10,8 @@ public class RedisPrefix {
     public static final String VERIFY_CODE_PREFIX = "verify:code:%s";
 
     public static final String USER_PREFIX = "user:%s";
+
+    public static final String USER_MOBILE_PREFIX = "user:m:%s";
 
     public static final String USER_PERMISSION_PREFIX = "user:permission:%s";
 
@@ -26,4 +31,5 @@ public class RedisPrefix {
 
     public static final String DICT_PARENT_VALUE_PREFIX = "dict:n:%s:p:%s";
 
+    
 }

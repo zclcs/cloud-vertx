@@ -1,9 +1,11 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -17,6 +19,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_dept")
 public class Dept extends BaseEntity implements Serializable {
 
     @Serial
@@ -25,31 +28,31 @@ public class Dept extends BaseEntity implements Serializable {
     /**
      * 部门id
      */
-    @Column(name = "dept_id")
+    @TableId(name = "dept_id")
     private Long deptId;
 
     /**
      * 部门编码
      */
-    @Column(name = "dept_code")
+    @TableColumn(name = "dept_code")
     private String deptCode;
 
     /**
      * 上级部门编码
      */
-    @Column(name = "parent_code")
+    @TableColumn(name = "parent_code")
     private String parentCode;
 
     /**
      * 部门名称
      */
-    @Column(name = "dept_name")
+    @TableColumn(name = "dept_name")
     private String deptName;
 
     /**
      * 排序
      */
-    @Column(name = "order_num")
+    @TableColumn(name = "order_num")
     private Double orderNum;
 
     public Dept() {

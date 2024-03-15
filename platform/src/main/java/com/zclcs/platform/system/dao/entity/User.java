@@ -1,9 +1,11 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_user")
 public class User extends BaseEntity implements Serializable {
 
     @Serial
@@ -26,85 +29,85 @@ public class User extends BaseEntity implements Serializable {
     /**
      * 用户id
      */
-    @Column(name = "user_id")
+    @TableId(name = "user_id")
     private Long userId;
 
     /**
      * 用户名
      */
-    @Column(name = "username")
+    @TableColumn(name = "username")
     private String username;
 
     /**
      * 用户昵称
      */
-    @Column(name = "real_name")
+    @TableColumn(name = "real_name")
     private String realName;
 
     /**
      * 密码
      */
-    @Column(name = "password")
+    @TableColumn(name = "password")
     private String password;
 
     /**
      * 部门id
      */
-    @Column(name = "dept_id")
+    @TableColumn(name = "dept_id")
     private Long deptId;
 
     /**
      * 邮箱
      */
-    @Column(name = "email")
+    @TableColumn(name = "email")
     private String email;
 
     /**
      * 联系电话
      */
-    @Column(name = "mobile")
+    @TableColumn(name = "mobile")
     private String mobile;
 
     /**
      * 状态 @@system_user.status
      */
-    @Column(name = "status")
+    @TableColumn(name = "status")
     private String status;
 
     /**
      * 最近访问时间
      */
-    @Column(name = "last_login_time")
+    @TableColumn(name = "last_login_time")
     private LocalDateTime lastLoginTime;
 
     /**
      * 性别 @@system_user.gender
      */
-    @Column(name = "gender")
+    @TableColumn(name = "gender")
     private String gender;
 
     /**
      * 是否开启tab @@yes_no
      */
-    @Column(name = "is_tab")
+    @TableColumn(name = "is_tab")
     private String isTab;
 
     /**
      * 主题
      */
-    @Column(name = "theme")
+    @TableColumn(name = "theme")
     private String theme;
 
     /**
      * 头像
      */
-    @Column(name = "avatar")
+    @TableColumn(name = "avatar")
     private String avatar;
 
     /**
      * 描述
      */
-    @Column(name = "description")
+    @TableColumn(name = "description")
     private String description;
 
     public User() {

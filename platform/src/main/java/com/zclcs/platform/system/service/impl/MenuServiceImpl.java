@@ -2,30 +2,33 @@ package com.zclcs.platform.system.service.impl;
 
 import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.entity.Menu;
+import com.zclcs.platform.system.dao.entity.MenuRowMapper;
 import com.zclcs.platform.system.service.MenuService;
+import com.zclcs.sql.helper.service.impl.BaseSqlService;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
 
-public class MenuServiceImpl implements MenuService {
+public class MenuServiceImpl extends BaseSqlService<Menu> implements MenuService {
 
-    private final SqlClient sqlClient;
+    private final Pool pool;
     private final RedisAPI redis;
 
     private final Duration redisMenuExpire = Duration.ofDays(1);
 
-    public MenuServiceImpl(SqlClient sqlClient, RedisAPI redis) {
-        this.sqlClient = sqlClient;
+    public MenuServiceImpl(Pool pool, RedisAPI redis) {
+        super(pool, MenuRowMapper.INSTANCE, Menu.class);
+        this.pool = pool;
         this.redis = redis;
     }
 
     @Override
     public Future<List<Menu>> getUserMenu(String username) {
-        SqlTemplate.forQuery(sqlClient, """
+        SqlTemplate.forQuery(pool, """
                 SELECT  system_menu.menu_id, 
                         system_menu.parent_code, 
                         system_menu.menu_name, 

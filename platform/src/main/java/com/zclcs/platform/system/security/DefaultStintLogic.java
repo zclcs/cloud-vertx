@@ -12,7 +12,7 @@ import com.zclcs.platform.system.service.impl.RateLimitRuleServiceImpl;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.sqlclient.SqlClient;
+import io.vertx.sqlclient.Pool;
 
 import java.util.List;
 
@@ -25,10 +25,10 @@ public class DefaultStintLogic implements StintProvider {
     private final BlackListService blackListService;
     private final List<HttpWhiteList> httpWhiteLists;
 
-    public DefaultStintLogic(JsonObject config, RedisAPI redis, SqlClient sqlClient) {
+    public DefaultStintLogic(JsonObject config, RedisAPI redis, Pool pool) {
         this.httpWhiteLists = JsonUtil.readList(config.getString("whiteList"), HttpWhiteList.class);
-        this.rateLimitRuleService = new RateLimitRuleServiceImpl(redis, sqlClient);
-        this.blackListService = new BlackListServiceImpl(redis, sqlClient);
+        this.rateLimitRuleService = new RateLimitRuleServiceImpl(redis, pool);
+        this.blackListService = new BlackListServiceImpl(redis, pool);
     }
 
     @Override
@@ -45,5 +45,5 @@ public class DefaultStintLogic implements StintProvider {
     public Future<List<HttpBlackList>> getBlackList() {
         return blackListService.getEnableHttpBlackListCache();
     }
-    
+
 }

@@ -1,5 +1,6 @@
 package com.zclcs.platform.system.security;
 
+import com.zclcs.common.security.constant.LoginType;
 import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.platform.system.service.UserService;
 import io.vertx.core.Future;
@@ -8,17 +9,16 @@ import io.vertx.core.Future;
  * @author zclcs
  */
 public class HasPermissionLogic implements PermissionProvider {
-
-    private final String permission;
     private final UserService userService;
+    private final String permission;
 
-    public HasPermissionLogic(String permission, UserService userService) {
-        this.permission = permission;
+    public HasPermissionLogic(UserService userService, String permission) {
         this.userService = userService;
+        this.permission = permission;
     }
 
     @Override
-    public Future<Boolean> hasPermission(String loginId, String loginType) {
+    public Future<Boolean> hasPermission(String loginId, LoginType loginType) {
         return userService.getUserPermissionCache(loginId)
                 .compose(userPermissions -> {
                     if (userPermissions != null && userPermissions.contains(permission)) {

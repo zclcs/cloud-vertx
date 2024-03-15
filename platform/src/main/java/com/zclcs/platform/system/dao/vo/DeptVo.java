@@ -3,14 +3,11 @@ package com.zclcs.platform.system.dao.vo;
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.codegen.json.annotations.JsonGen;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 部门 Vo
@@ -20,7 +17,6 @@ import java.util.Map;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
-@JsonGen
 public class DeptVo extends BaseEntity implements Serializable {
 
     @Serial
@@ -67,12 +63,6 @@ public class DeptVo extends BaseEntity implements Serializable {
     private LocalDate createTimeTo;
 
     public DeptVo() {
-    }
-
-    public Map<String, Object> toMap() {
-        Map<String, Object> map = new HashMap<>();
-        DeptVoConverter.toJson(this, map);
-        return map;
     }
 
     public Long getDeptId() {

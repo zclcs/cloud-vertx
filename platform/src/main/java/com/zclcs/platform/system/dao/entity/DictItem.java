@@ -1,9 +1,11 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.sql.helper.annotation.Table;
+import com.zclcs.sql.helper.annotation.TableColumn;
+import com.zclcs.sql.helper.annotation.TableId;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.codegen.format.SnakeCase;
-import io.vertx.sqlclient.templates.annotations.Column;
 import io.vertx.sqlclient.templates.annotations.RowMapped;
 
 import java.io.Serial;
@@ -17,6 +19,7 @@ import java.io.Serializable;
  */
 @DataObject
 @RowMapped(formatter = SnakeCase.class)
+@Table(name = "system_dict_item")
 public class DictItem extends BaseEntity implements Serializable {
 
     @Serial
@@ -25,61 +28,61 @@ public class DictItem extends BaseEntity implements Serializable {
     /**
      * 主键
      */
-    @Column(name = "id")
+    @TableId(name = "id")
     private Long id;
 
     /**
      * 字典key
      */
-    @Column(name = "dict_name")
+    @TableColumn(name = "dict_name")
     private String dictName;
 
     /**
      * 父级字典值
      */
-    @Column(name = "parent_value")
+    @TableColumn(name = "parent_value")
     private String parentValue;
 
     /**
      * 值
      */
-    @Column(name = "value")
+    @TableColumn(name = "value")
     private String value;
 
     /**
      * 标签
      */
-    @Column(name = "title")
+    @TableColumn(name = "title")
     private String title;
 
     /**
      * 字典类型 @@system_dict_item.type
      */
-    @Column(name = "type")
+    @TableColumn(name = "type")
     private String type;
 
     /**
      * 是否系统字典 @@yes_no
      */
-    @Column(name = "whether_system_dict")
+    @TableColumn(name = "whether_system_dict")
     private String whetherSystemDict;
 
     /**
      * 描述
      */
-    @Column(name = "description")
+    @TableColumn(name = "description")
     private String description;
 
     /**
      * 排序（升序）
      */
-    @Column(name = "sorted")
+    @TableColumn(name = "sorted")
     private Integer sorted;
 
     /**
      * 是否禁用 @@yes_no
      */
-    @Column(name = "is_disabled")
+    @TableColumn(name = "is_disabled")
     private String isDisabled;
 
     public DictItem() {
