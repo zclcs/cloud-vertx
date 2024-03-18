@@ -9,6 +9,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
@@ -98,12 +99,19 @@ public interface SqlService<T> {
         return promise.future();
     }
 
-    default void save(T entity, Handler<AsyncResult<Boolean>> handler) {
+    default void save(T entity, Handler<AsyncResult<T>> handler) {
         SqlAndParams sqlAndParams = sqlStatement().insertNonEmptySQL(entity);
         execute(sqlAndParams, ar -> {
             if (ar.succeeded()) {
-                if (ar.result().rowCount() > 0) {
-                    handler.handle(Future.succeededFuture(true));
+                RowSet<Row> rows = ar.result();
+                if (rows.rowCount() > 0) {
+                    try {
+                        long lastInsertId = rows.property(MySQLClient.LAST_INSERTED_ID);
+                        sqlStatement().setPrimaryId(entity, lastInsertId);
+                    } catch (Exception ignored) {
+
+                    }
+                    handler.handle(Future.succeededFuture(entity));
                 }
             }
             handler.handle(Future.failedFuture(ar.cause()));
@@ -116,8 +124,8 @@ public interface SqlService<T> {
      * @param entity 实体类对象
      * @return {@code true} 保存成功，{@code false} 保存失败。
      */
-    default Future<Boolean> save(T entity) {
-        Promise<Boolean> promise = Promise.promise();
+    default Future<T> save(T entity) {
+        Promise<T> promise = Promise.promise();
         save(entity, promise);
         return promise.future();
     }
@@ -199,20 +207,21 @@ public interface SqlService<T> {
         return promise.future();
     }
 
-    default void updateById(T entity, Handler<AsyncResult<Boolean>> handler) {
+    default void updateById(T entity, Handler<AsyncResult<T>> handler) {
         SqlAndParams sqlAndParams = sqlStatement().updateNonEmptyByIdSQL(entity);
         execute(sqlAndParams, ar -> {
             if (ar.succeeded()) {
-                if (ar.result().rowCount() > 0) {
-                    handler.handle(Future.succeededFuture(true));
+                RowSet<Row> rows = ar.result();
+                if (rows.rowCount() > 0) {
+                    handler.handle(Future.succeededFuture(entity));
                 }
             }
             handler.handle(Future.failedFuture(ar.cause()));
         });
     }
 
-    default Future<Boolean> updateById(T entity) {
-        Promise<Boolean> promise = Promise.promise();
+    default Future<T> updateById(T entity) {
+        Promise<T> promise = Promise.promise();
         updateById(entity, promise);
         return promise.future();
     }
@@ -235,7 +244,7 @@ public interface SqlService<T> {
         return promise.future();
     }
 
-    default void saveOrUpdate(T entity, Handler<AsyncResult<Boolean>> handler) throws Exception {
+    default void saveOrUpdate(T entity, Handler<AsyncResult<T>> handler) throws Exception {
         Object primaryKeyValue = sqlStatement().primaryKeyValue(sqlStatement().getPropertyValue(entity));
         if (sqlStatement().isPrimaryHasValue(primaryKeyValue)) {
             updateById(entity, handler);
@@ -244,8 +253,8 @@ public interface SqlService<T> {
         }
     }
 
-    default Future<Boolean> saveOrUpdate(T entity) throws Exception {
-        Promise<Boolean> promise = Promise.promise();
+    default Future<T> saveOrUpdate(T entity) throws Exception {
+        Promise<T> promise = Promise.promise();
         saveOrUpdate(entity, promise);
         return promise.future();
     }
@@ -316,25 +325,25 @@ public interface SqlService<T> {
         return promise.future();
     }
 
-    default <S> void ListByIds(List<S> primaryValues, Handler<AsyncResult<List<T>>> handler) {
-        ListByIdsAs(primaryValues, rowMapper(), handler);
+    default <S> void listByIds(List<S> primaryValues, Handler<AsyncResult<List<T>>> handler) {
+        listByIdsAs(primaryValues, rowMapper(), handler);
     }
 
-    default <S> Future<List<T>> ListByIds(List<S> primaryValues) {
+    default <S> Future<List<T>> listByIds(List<S> primaryValues) {
         Promise<List<T>> promise = Promise.promise();
-        ListByIds(primaryValues, promise);
+        listByIds(primaryValues, promise);
         return promise.future();
     }
 
-    default <S, R> void ListByIdsAs(List<S> primaryValues, RowMapper<R> mapping, Handler<AsyncResult<List<R>>> handler) {
+    default <S, R> void listByIdsAs(List<S> primaryValues, RowMapper<R> mapping, Handler<AsyncResult<List<R>>> handler) {
         SqlAndParams sqlAndParams = sqlStatement().selectAllSQL(new SqlAssist(SqlWhereCondition.andIn(sqlStatement().primaryId(), primaryValues)));
         execute(sqlAndParams, mapping).flatMap(rowSet ->
                 Future.succeededFuture(rowSetToList(rowSet))).onComplete(handler);
     }
 
-    default <S, R> Future<List<R>> ListByIdsAs(List<S> primaryValues, RowMapper<R> mapping) {
+    default <S, R> Future<List<R>> listByIdsAs(List<S> primaryValues, RowMapper<R> mapping) {
         Promise<List<R>> promise = Promise.promise();
-        ListByIdsAs(primaryValues, mapping, promise);
+        listByIdsAs(primaryValues, mapping, promise);
         return promise.future();
     }
 
@@ -459,25 +468,25 @@ public interface SqlService<T> {
         return promise.future();
     }
 
-    default void ListByCustomSql(String sqlString, SqlAssist sqlAssist, Handler<AsyncResult<List<T>>> handler) {
-        ListByCustomSqlAs(sqlString, sqlAssist, rowMapper(), handler);
+    default void listByCustomSql(String sqlString, SqlAssist sqlAssist, Handler<AsyncResult<List<T>>> handler) {
+        listByCustomSqlAs(sqlString, sqlAssist, rowMapper(), handler);
     }
 
-    default Future<List<T>> ListByCustomSql(String sqlString, SqlAssist sqlAssist) {
+    default Future<List<T>> listByCustomSql(String sqlString, SqlAssist sqlAssist) {
         Promise<List<T>> promise = Promise.promise();
-        ListByCustomSql(sqlString, sqlAssist, promise);
+        listByCustomSql(sqlString, sqlAssist, promise);
         return promise.future();
     }
 
-    default <R> void ListByCustomSqlAs(String sqlString, SqlAssist sqlAssist, RowMapper<R> mapping, Handler<AsyncResult<List<R>>> handler) {
+    default <R> void listByCustomSqlAs(String sqlString, SqlAssist sqlAssist, RowMapper<R> mapping, Handler<AsyncResult<List<R>>> handler) {
         SqlAndParams sqlAndParams = sqlStatement().selectByCustomSql(sqlString, sqlAssist);
         execute(sqlAndParams, mapping).flatMap(rowSet ->
                 Future.succeededFuture(rowSetToList(rowSet))).onComplete(handler);
     }
 
-    default <R> Future<List<R>> ListByCustomSqlAs(String sqlString, SqlAssist sqlAssist, RowMapper<R> mapping) {
+    default <R> Future<List<R>> listByCustomSqlAs(String sqlString, SqlAssist sqlAssist, RowMapper<R> mapping) {
         Promise<List<R>> promise = Promise.promise();
-        ListByCustomSqlAs(sqlString, sqlAssist, mapping, promise);
+        listByCustomSqlAs(sqlString, sqlAssist, mapping, promise);
         return promise.future();
     }
 
@@ -514,7 +523,7 @@ public interface SqlService<T> {
                 if (count == 0 || sqlAssist.getPage() > result.getPages()) {
                     handler.handle(Future.succeededFuture(new Page<>()));
                 } else {
-                    ListByCustomSqlAs(sqlString, sqlAssist, mapping, ar -> {
+                    listByCustomSqlAs(sqlString, sqlAssist, mapping, ar -> {
                         if (ar.succeeded()) {
                             result.setList(ar.result());
                             handler.handle(Future.succeededFuture(result));

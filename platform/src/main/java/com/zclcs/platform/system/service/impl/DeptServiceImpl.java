@@ -12,6 +12,8 @@ import com.zclcs.platform.system.dao.vo.DeptVo;
 import com.zclcs.platform.system.dao.vo.DeptVoRowMapper;
 import com.zclcs.platform.system.service.DeptService;
 import com.zclcs.sql.helper.service.impl.BaseSqlService;
+import com.zclcs.sql.helper.statement.bean.SqlAssist;
+import com.zclcs.sql.helper.util.If;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
@@ -33,29 +35,9 @@ public class DeptServiceImpl extends BaseSqlService<Dept> implements DeptService
 
     @Override
     public Future<List<DeptVo>> getDeptVoList(DeptVo deptVo) {
-        return SqlTemplate.forQuery(pool, """
-                        SELECT 
-                        `dept_id`, 
-                        `dept_code`, 
-                        `parent_code`, 
-                        `dept_name`, 
-                        `order_num`, 
-                        `create_at`, 
-                        `update_at` 
-                        FROM `system_dept` 
-                        ORDER BY `order_num` ASC
-                        """)
-                .mapTo(DeptVoRowMapper.INSTANCE)
-                .execute(BeanToMapUtil.beanToMap(deptVo))
-                .flatMap(rows -> {
-                    if (rows.size() > 0) {
-                        List<DeptVo> deptVoList = new ArrayList<>();
-                        rows.forEach(deptVoList::add);
-                        return Future.succeededFuture(deptVoList);
-                    }
-                    return Future.succeededFuture(null);
-                })
-                ;
+        return this.listAs(new SqlAssist()
+                        .andLike("dept_name", deptVo.getDeptName(), If::hasText),
+                DeptVoRowMapper.INSTANCE);
     }
 
     @Override

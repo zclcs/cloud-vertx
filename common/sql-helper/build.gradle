@@ -2,4 +2,5 @@ dependencies {
     api(project(":common:core"))
     api("io.vertx:vertx-jdbc-client")
     api("io.vertx:vertx-sql-client-templates")
+    implementation("io.vertx:vertx-mysql-client")
 }

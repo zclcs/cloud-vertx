@@ -102,6 +102,7 @@ public interface SQLStatement {
     /**
      * 获取主键值
      *
+     * @param propertyValue 属性值
      * @return 主键值
      */
     Object primaryKeyValue(List<SqlPropertyValue<?>> propertyValue);
@@ -113,6 +114,13 @@ public interface SQLStatement {
      * @return 是否
      */
     Boolean isPrimaryHasValue(Object primaryKeyValue);
+
+    /**
+     * 新增后设置主键值
+     *
+     * @param primaryKeyValue 主键值
+     */
+    <T> void setPrimaryId(T entity, Object primaryKeyValue) throws Exception;
 
     /**
      * 表的所有列名与列名对应的值

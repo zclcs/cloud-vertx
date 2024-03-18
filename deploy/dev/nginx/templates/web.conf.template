@@ -3,7 +3,7 @@ server {
 	client_max_body_size ${NGINX_MAX_FILE_SIZE};
 	# server_name  localhost
 
-	location /basic-api/system/ {
+	location /basic-api/ {
 		# 后台接口地址
 		proxy_pass http://127.0.0.1:${PLATFORM_SYSTEM_HTTP_PORT}/;
 		proxy_set_header X-Real-IP $remote_addr;

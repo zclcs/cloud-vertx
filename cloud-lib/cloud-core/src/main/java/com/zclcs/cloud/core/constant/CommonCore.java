@@ -15,4 +15,5 @@ public class CommonCore {
      * 默认头像
      */
     public static final String DEFAULT_AVATAR = "default.jpg";
+    public static final String DEFAULT_PASSWORD = "123456";
 }

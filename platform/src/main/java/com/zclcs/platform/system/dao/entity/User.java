@@ -1,6 +1,7 @@
 package com.zclcs.platform.system.dao.entity;
 
 import com.zclcs.cloud.lib.domain.entity.BaseEntity;
+import com.zclcs.platform.system.dao.ao.UserAo;
 import com.zclcs.sql.helper.annotation.Table;
 import com.zclcs.sql.helper.annotation.TableColumn;
 import com.zclcs.sql.helper.annotation.TableId;
@@ -113,6 +114,24 @@ public class User extends BaseEntity implements Serializable {
     public User() {
     }
 
+    public static User fromAo(UserAo userAo) {
+        User user = new User();
+        user.setUserId(userAo.getUserId());
+        user.setUsername(userAo.getUsername());
+        user.setRealName(userAo.getRealName());
+        user.setPassword(userAo.getPassword());
+        user.setDeptId(userAo.getDeptId());
+        user.setEmail(userAo.getEmail());
+        user.setMobile(userAo.getMobile());
+        user.setStatus(userAo.getStatus());
+        user.setLastLoginTime(userAo.getLastLoginTime());
+        user.setGender(userAo.getGender());
+        user.setIsTab(userAo.getIsTab());
+        user.setTheme(userAo.getTheme());
+        user.setAvatar(userAo.getAvatar());
+        user.setDescription(userAo.getDescription());
+        return user;
+    }
 
     public Long getUserId() {
         return userId;

@@ -121,7 +121,10 @@ public class SqlWhereCondition<T> {
      * @return {@link SqlWhereCondition}
      */
     public static <T> SqlWhereCondition<T> andIn(String column, List<T> value) {
-        return new SqlWhereCondition<T>("and " + column + " in ? ", value);
+        StringBuilder sb = new StringBuilder("and " + column + " in (");
+        sb.append("?,".repeat(value.size()));
+        sb.deleteCharAt(sb.length() - 1).append(")");
+        return new SqlWhereCondition<T>(sb.toString(), value.toArray());
     }
 
     /**
@@ -133,7 +136,10 @@ public class SqlWhereCondition<T> {
      * @return {@link SqlWhereCondition}
      */
     public static <T> SqlWhereCondition<T> orIn(String column, List<T> value) {
-        return new SqlWhereCondition<T>("or " + column + " in ? ", value);
+        StringBuilder sb = new StringBuilder("and " + column + " in (");
+        sb.append("?,".repeat(value.size()));
+        sb.deleteCharAt(sb.length() - 1).append(")");
+        return new SqlWhereCondition<T>("or " + column + " in ? ", value.toArray());
     }
 
     /**

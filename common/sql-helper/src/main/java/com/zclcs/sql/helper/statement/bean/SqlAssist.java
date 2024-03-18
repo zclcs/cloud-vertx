@@ -66,10 +66,11 @@ public class SqlAssist {
 
     }
 
-    public SqlAssist(PageAo pageAo) {
+    public SqlAssist page(PageAo pageAo) {
         this.page = pageAo.getPageNum();
         this.rowSize = pageAo.getPageSize();
         this.startRow = pageAo.getSqlQueryStart();
+        return this;
     }
 
     /**

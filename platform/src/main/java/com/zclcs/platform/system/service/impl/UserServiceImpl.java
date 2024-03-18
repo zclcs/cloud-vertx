@@ -14,26 +14,24 @@ import com.zclcs.common.security.constant.LoginType;
 import com.zclcs.platform.system.dao.ao.UserAo;
 import com.zclcs.platform.system.dao.cache.MenuCacheVo;
 import com.zclcs.platform.system.dao.cache.UserCacheVo;
-import com.zclcs.platform.system.dao.entity.MenuRowMapper;
-import com.zclcs.platform.system.dao.entity.User;
-import com.zclcs.platform.system.dao.entity.UserRowMapper;
+import com.zclcs.platform.system.dao.entity.*;
 import com.zclcs.platform.system.dao.router.RouterMeta;
 import com.zclcs.platform.system.dao.router.VueRouter;
 import com.zclcs.platform.system.dao.vo.UserVo;
 import com.zclcs.platform.system.dao.vo.UserVoRowMapper;
-import com.zclcs.platform.system.service.DictItemService;
-import com.zclcs.platform.system.service.RoleService;
-import com.zclcs.platform.system.service.UserService;
+import com.zclcs.platform.system.service.*;
 import com.zclcs.platform.system.utils.VueRouterUtil;
 import com.zclcs.sql.helper.service.impl.BaseSqlService;
 import com.zclcs.sql.helper.statement.bean.Page;
 import com.zclcs.sql.helper.statement.bean.PageAo;
+import com.zclcs.sql.helper.statement.bean.SqlAndParams;
 import com.zclcs.sql.helper.statement.bean.SqlAssist;
 import com.zclcs.sql.helper.util.If;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.mysqlclient.MySQLClient;
 import io.vertx.redis.client.RedisAPI;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
@@ -41,10 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author zclcs
@@ -54,14 +49,18 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final RoleService roleService;
+    private final UserRoleService userRoleService;
+    private final UserDataPermissionService userDataPermissionService;
     private final Pool pool;
     private final RedisAPI redis;
     private final DictItemService dictItemService;
     private final Duration redisExpire = Duration.ofDays(1);
 
-    public UserServiceImpl(RoleService roleService, DictItemService dictItemService, Pool pool, RedisAPI redis) {
+    public UserServiceImpl(RoleService roleService, UserRoleService userRoleService, UserDataPermissionService userDataPermissionService, DictItemService dictItemService, Pool pool, RedisAPI redis) {
         super(pool, UserRowMapper.INSTANCE, User.class);
         this.roleService = roleService;
+        this.userRoleService = userRoleService;
+        this.userDataPermissionService = userDataPermissionService;
         this.dictItemService = dictItemService;
         this.pool = pool;
         this.redis = redis;
@@ -248,7 +247,7 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
                                                        INNER JOIN system_role ON system_role_menu.role_id = system_role.role_id
                                                        INNER JOIN system_user_role ON system_role.role_id = system_user_role.role_id
                                                        INNER JOIN system_user ON system_user_role.user_id = system_user.user_id
-                                                WHERE system_user.username = 'develop'
+                                                WHERE system_user.username = #{loginId}
                                                   and system_menu.type != '1'
                                                 group by system_menu.menu_id,
                                                          system_menu.parent_code,
@@ -308,7 +307,7 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
     }
 
     @Override
-    public Future<UserAo> createUser(UserAo userAo) {
+    public Future<User> createUser(UserAo userAo) {
         return validateUsername(userAo.getUsername(), userAo.getUserId()).compose(validateUsername -> {
             if (validateUsername) {
                 return Future.failedFuture("用户名已存在");
@@ -318,20 +317,111 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
                         return Future.failedFuture("手机号已存在");
                     } else {
                         userAo.setAvatar(CommonCore.DEFAULT_AVATAR);
-                        userAo.setPassword(BCrypt.hashpw(userAo.getPassword()));
-                        String sql = """
-                                INSERT INTO system_user 
-                                        (username, real_name, password, dept_id, email, mobile, gender, is_tab, theme, avatar, description, create_by, update_by) 
-                                        VALUES (#{username}, #{real_name} #{password}, #{dept_id}, #{email}, #{mobile}, #{gender}, #{is_tab}, #{theme}, #{avatar}, #{description}, #{create_by}, #{update_by});
-                                """;
-                        return SqlTemplate.forUpdate(pool, sql)
-                                .mapFrom(UserAo.class)
-                                .execute(userAo)
-                                .compose(user -> Future.succeededFuture(userAo));
+                        userAo.setPassword(BCrypt.hashpw(CommonCore.DEFAULT_PASSWORD));
+                        User user = User.fromAo(userAo);
+                        SqlAndParams addUser = sqlStatement().insertNonEmptySQL(user);
+                        return pool.withTransaction(client -> client.preparedQuery(addUser.getSql())
+                                .execute(addUser.getParams())
+                                .flatMap(addUserRes -> {
+                                    long userId = addUserRes.property(MySQLClient.LAST_INSERTED_ID);
+                                    user.setUserId(userId);
+                                    List<UserRole> userRoles = getUserRoles(user, userAo.getRoleIds());
+                                    List<UserDataPermission> userDataPermissions = getUserDataPermissions(user, userAo.getDeptIds());
+                                    SqlAndParams deleteUserRoles = userRoleService.sqlStatement().deleteByAssistSQL(new SqlAssist().andEq("user_id", user.getUserId()));
+                                    SqlAndParams addUserRoles = userRoleService.sqlStatement().insertBatchSQL(userRoles);
+                                    SqlAndParams deleteUserDataPermissions = userDataPermissionService.sqlStatement().deleteByAssistSQL(new SqlAssist().andEq("user_id", user.getUserId()));
+                                    SqlAndParams addUserDataPermissions = userDataPermissionService.sqlStatement().insertBatchSQL(userDataPermissions);
+                                    return client.preparedQuery(deleteUserRoles.getSql())
+                                            .execute(deleteUserRoles.getParams())
+                                            .flatMap(deleteUserRolesRes -> client.preparedQuery(addUserRoles.getSql())
+                                                    .executeBatch(addUserRoles.getBatchParams())
+                                                    .flatMap(addUserRolesRes -> client.preparedQuery(deleteUserDataPermissions.getSql())
+                                                            .execute(deleteUserDataPermissions.getParams())
+                                                            .flatMap(deleteUserDataPermissionsRes -> client.preparedQuery(addUserDataPermissions.getSql())
+                                                                    .executeBatch(addUserDataPermissions.getBatchParams())
+                                                                    .flatMap(addUserDataPermissionsRes -> deleteUserRelatedCache(user.getUsername())
+                                                                            .flatMap(userRelatedCacheRes -> Future.succeededFuture(user))
+                                                                    )
+                                                            )
+                                                    )
+                                            );
+                                }));
                     }
                 });
             }
         });
+    }
+
+    @Override
+    public Future<User> updateUser(UserAo userAo) {
+        return validateUsername(userAo.getUsername(), userAo.getUserId()).compose(validateUsername -> {
+            if (validateUsername) {
+                return Future.failedFuture("用户名已存在");
+            } else {
+                return validateMobile(userAo.getMobile(), userAo.getUserId()).compose(validateMobile -> {
+                    if (validateMobile) {
+                        return Future.failedFuture("手机号已存在");
+                    } else {
+                        userAo.setAvatar(CommonCore.DEFAULT_AVATAR);
+                        userAo.setPassword(null);
+                        User user = User.fromAo(userAo);
+                        List<UserRole> userRoles = getUserRoles(user, userAo.getRoleIds());
+                        List<UserDataPermission> userDataPermissions = getUserDataPermissions(user, userAo.getDeptIds());
+                        SqlAndParams updateUser = sqlStatement().updateNonEmptyByIdSQL(user);
+                        SqlAndParams deleteUserRoles = userRoleService.sqlStatement().deleteByAssistSQL(new SqlAssist().andEq("user_id", user.getUserId()));
+                        SqlAndParams addUserRoles = userRoleService.sqlStatement().insertBatchSQL(userRoles);
+                        SqlAndParams deleteUserDataPermissions = userDataPermissionService.sqlStatement().deleteByAssistSQL(new SqlAssist().andEq("user_id", user.getUserId()));
+                        SqlAndParams addUserDataPermissions = userDataPermissionService.sqlStatement().insertBatchSQL(userDataPermissions);
+                        return pool.withTransaction(client -> client.preparedQuery(updateUser.getSql())
+                                .execute(updateUser.getParams())
+                                .flatMap(addUserRes -> client.preparedQuery(deleteUserRoles.getSql())
+                                        .execute(deleteUserRoles.getParams())
+                                        .flatMap(deleteUserRolesRes -> client.preparedQuery(addUserRoles.getSql())
+                                                .executeBatch(addUserRoles.getBatchParams())
+                                                .flatMap(addUserRolesRes -> client.preparedQuery(deleteUserDataPermissions.getSql())
+                                                        .execute(deleteUserDataPermissions.getParams())
+                                                        .flatMap(deleteUserDataPermissionsRes -> client.preparedQuery(addUserDataPermissions.getSql())
+                                                                .executeBatch(addUserDataPermissions.getBatchParams())
+                                                                .flatMap(addUserDataPermissionsRes -> deleteUserRelatedCache(user.getUsername())
+                                                                        .flatMap(userRelatedCacheRes -> Future.succeededFuture(user))
+                                                                )
+                                                        )
+                                                )
+                                        )
+                                ));
+                    }
+                });
+            }
+        });
+    }
+
+    @Override
+    public Future<Void> deleteUser(List<Long> ids) {
+        SqlAndParams selectUserSql = sqlStatement().selectAllSQL(new SqlAssist().andIn("user_id", ids));
+        SqlAndParams deleteUser = sqlStatement().deleteByIdsSQL(ids);
+        SqlAndParams deleteUserRoles = userRoleService.sqlStatement().deleteByAssistSQL(new SqlAssist().andIn("user_id", ids));
+        SqlAndParams deleteUserDataPermissions = userDataPermissionService.sqlStatement().deleteByAssistSQL(new SqlAssist().andIn("user_id", ids));
+        return pool.withTransaction(client -> client.preparedQuery(selectUserSql.getSql())
+                .execute(selectUserSql.getParams())
+                .flatMap(selectUserRes -> client.preparedQuery(deleteUser.getSql())
+                        .execute(deleteUser.getParams())
+                        .flatMap(deleteUserRes -> client.preparedQuery(deleteUserRoles.getSql())
+                                .execute(deleteUserRoles.getParams())
+                                .flatMap(deleteUserRolesRes -> client.preparedQuery(deleteUserDataPermissions.getSql())
+                                        .execute(deleteUserDataPermissions.getParams())
+                                        .flatMap(deleteUserDataPermissionsRes -> {
+                                            List<String> usernames = new ArrayList<>();
+                                            selectUserRes.forEach(row -> {
+                                                String userName = row.getString("username");
+                                                usernames.add(userName);
+                                            });
+                                            return deleteUserRelatedCache(usernames.toArray(new String[0]))
+                                                    .flatMap(userRelatedCacheRes -> Future.succeededFuture());
+                                        })
+                                )
+                        )
+                )
+        );
     }
 
     @Override
@@ -357,96 +447,102 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
     }
 
     @Override
-    public Future<Boolean> deleteUserRelatedCache(String username) {
-        return redis.del(List.of(
-                        String.format(RedisPrefix.USER_PREFIX, username),
-                        String.format(RedisPrefix.USER_MOBILE_PREFIX, username),
-                        String.format(RedisPrefix.USER_PERMISSION_PREFIX, username),
-                        String.format(RedisPrefix.USER_ROUTER_PREFIX, username)
-                ))
+    public Future<Boolean> deleteUserRelatedCache(String... usernames) {
+        List<String> deletePrefix = new ArrayList<>();
+        for (String username : usernames) {
+            deletePrefix.addAll(List.of(
+                    String.format(RedisPrefix.USER_PREFIX, username),
+                    String.format(RedisPrefix.USER_MOBILE_PREFIX, username),
+                    String.format(RedisPrefix.USER_PERMISSION_PREFIX, username),
+                    String.format(RedisPrefix.USER_ROUTER_PREFIX, username)
+            ));
+        }
+        return redis.del(deletePrefix)
                 .map(v -> true);
     }
 
     @Override
+    public Future<UserVo> getUserOne(UserVo userVo) {
+        return this.getOneByCustomSqlAs(userVoBaseSql(), userVoSqlAssist(userVo), UserVoRowMapper.INSTANCE)
+                .compose(one -> setDict(one)
+                        .compose(v -> Future.succeededFuture(one))
+                )
+                ;
+    }
+
+    @Override
+    public Future<List<UserVo>> getUserList(UserVo userVo) {
+        return this.listByCustomSqlAs(userVoBaseSql(), userVoSqlAssist(userVo), UserVoRowMapper.INSTANCE)
+                .compose(list -> setDict(list)
+                        .compose(v -> Future.succeededFuture(list))
+                )
+                ;
+    }
+
+    @Override
     public Future<Page<UserVo>> getUserPage(UserVo userVo, PageAo pageAo) {
-        String sql = """
-                SELECT
-                	su.user_id,
-                	su.username,
-                	su.real_name,
-                	su.password,
-                	su.dept_id,
-                	su.email,
-                	su.mobile,
-                	su.status,
-                	su.last_login_time,
-                	su.gender,
-                	su.is_tab,
-                	su.theme,
-                	su.avatar,
-                	su.description,
-                	su.create_at,
-                	GROUP_CONCAT( distinct sr.role_id ) role_id_string,
-                	GROUP_CONCAT( distinct sr.role_name ) role_name_string,
-                	GROUP_CONCAT( distinct sudp.dept_id ) dept_id_string
-                FROM
-                	system_user su
-                	LEFT JOIN system_user_role sur ON su.user_id = sur.user_id
-                	LEFT JOIN system_role sr ON sur.role_id = sr.role_id
-                	LEFT JOIN system_user_data_permission sudp ON su.user_id = sudp.user_id
-                """;
-        return this.pageByCustomSqlAs(sql, new SqlAssist(pageAo)
-                        .andLike("username", userVo.getUsername(), If::hasText)
-                        .setGroupBy("""
-                                su.user_id,
-                                	su.username,
-                                	su.real_name,
-                                	su.PASSWORD,
-                                	su.dept_id,
-                                	su.email,
-                                	su.mobile,
-                                	su.STATUS,
-                                	su.last_login_time,
-                                	su.gender,
-                                	su.is_tab,
-                                	su.theme,
-                                	su.avatar,
-                                	su.description,
-                                	su.create_at
-                                """), UserVoRowMapper.INSTANCE)
-                .compose(page -> {
-                    List<UserVo> list = page.getList();
-                    setDict(list);
-                    page.setList(list);
-                    return Future.succeededFuture(page);
-                })
+        return this.pageByCustomSqlAs(userVoBaseSql(), userVoSqlAssist(userVo)
+                        .page(pageAo), UserVoRowMapper.INSTANCE)
+                .compose(page -> setDict(page.getList())
+                        .compose(v -> Future.succeededFuture(page))
+                )
                 ;
     }
 
     private Future<CompositeFuture> setDict(List<UserVo> list) {
         List<Future<Void>> futures = new ArrayList<>();
-        list.forEach(user -> {
-            futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_STATUS, user.getStatus())
-                    .compose(title -> {
-                        user.setStatusText(title);
-                        return Future.succeededFuture();
-                    }));
-            futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_GENDER, user.getGender())
-                    .compose(title -> {
-                        user.setGenderText(title);
-                        return Future.succeededFuture();
-                    }));
-            futures.add(dictItemService.getDictTitle(DictName.YES_NO, user.getIsTab())
-                    .compose(title -> {
-                        user.setIsTabText(title);
-                        return Future.succeededFuture();
-                    }));
-        });
+        list.forEach(userVo -> futures.addAll(getDictFutures(userVo)));
         return Future.all(futures);
     }
 
-    private String getUserPageSql(UserVo userVo) {
-        String sql = """
+    private Future<CompositeFuture> setDict(UserVo userVo) {
+        return Future.all(getDictFutures(userVo));
+    }
+
+    private List<Future<Void>> getDictFutures(UserVo userVo) {
+        List<Future<Void>> futures = new ArrayList<>();
+        futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_STATUS, userVo.getStatus())
+                .compose(title -> {
+                    userVo.setStatusText(title);
+                    return Future.succeededFuture();
+                }));
+        futures.add(dictItemService.getDictTitle(DictName.SYSTEM_USER_GENDER, userVo.getGender())
+                .compose(title -> {
+                    userVo.setGenderText(title);
+                    return Future.succeededFuture();
+                }));
+        futures.add(dictItemService.getDictTitle(DictName.YES_NO, userVo.getIsTab())
+                .compose(title -> {
+                    userVo.setIsTabText(title);
+                    return Future.succeededFuture();
+                }));
+        return futures;
+    }
+
+    private List<UserRole> getUserRoles(User user, List<Long> roleIds) {
+        List<UserRole> userRoles = new ArrayList<>();
+        roleIds.stream().filter(Objects::nonNull).forEach(roleId -> {
+            UserRole userRole = new UserRole();
+            userRole.setUserId(user.getUserId());
+            userRole.setRoleId(roleId);
+            userRoles.add(userRole);
+        });
+        return userRoles;
+    }
+
+    private List<UserDataPermission> getUserDataPermissions(User user, List<Long> deptIds) {
+        List<UserDataPermission> userDataPermissions = new ArrayList<>();
+        deptIds.stream().filter(Objects::nonNull).forEach(deptId -> {
+            UserDataPermission permission = new UserDataPermission();
+            permission.setUserId(user.getUserId());
+            permission.setDeptId(deptId);
+            userDataPermissions.add(permission);
+        });
+        return userDataPermissions;
+    }
+
+    private String userVoBaseSql() {
+        return """
                 SELECT
                 	su.user_id,
                 	su.username,
@@ -471,34 +567,30 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
                 	LEFT JOIN system_user_role sur ON su.user_id = sur.user_id
                 	LEFT JOIN system_role sr ON sur.role_id = sr.role_id
                 	LEFT JOIN system_user_data_permission sudp ON su.user_id = sudp.user_id
-                WHERE
-                	1 = 1
-                	%s
-                GROUP BY
-                	su.user_id,
-                	su.username,
-                	su.real_name,
-                	su.PASSWORD,
-                	su.dept_id,
-                	su.email,
-                	su.mobile,
-                	su.STATUS,
-                	su.last_login_time,
-                	su.gender,
-                	su.is_tab,
-                	su.theme,
-                	su.avatar,
-                	su.description,
-                	su.create_at
                 """;
-        String condition = "";
-        if (StringsUtil.isNotBlank(userVo.getUsername())) {
-            condition += " and username like concat('%', #{username}, '%') ";
-        }
-        sql = String.format(sql, condition);
-        sql += " limit #{sqlQueryStart}, #{sqlQueryEnd}";
-        return sql;
     }
 
+    private SqlAssist userVoSqlAssist(UserVo userVo) {
+        return new SqlAssist()
+                .andEq("su.user_id", userVo.getUserId(), If::notNull)
+                .andLike("su.username", userVo.getUsername(), If::hasText)
+                .setGroupBy("""
+                            su.user_id,
+                        	su.username,
+                        	su.real_name,
+                        	su.PASSWORD,
+                        	su.dept_id,
+                        	su.email,
+                        	su.mobile,
+                        	su.STATUS,
+                        	su.last_login_time,
+                        	su.gender,
+                        	su.is_tab,
+                        	su.theme,
+                        	su.avatar,
+                        	su.description,
+                        	su.create_at
+                        """);
+    }
 
 }

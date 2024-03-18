@@ -89,7 +89,23 @@ public interface UserService extends SqlService<User> {
      * @param userAo {@link UserAo}
      * @return {@link User}
      */
-    Future<UserAo> createUser(UserAo userAo);
+    Future<User> createUser(UserAo userAo);
+
+    /**
+     * 修改
+     *
+     * @param userAo {@link UserAo}
+     * @return {@link User}
+     */
+    Future<User> updateUser(UserAo userAo);
+
+    /**
+     * 删除
+     *
+     * @param ids 用户id
+     * @return 成功
+     */
+    Future<Void> deleteUser(List<Long> ids);
 
     /**
      * 验证用户名
@@ -112,15 +128,31 @@ public interface UserService extends SqlService<User> {
     /**
      * 删除用户相关缓存
      *
-     * @param username 用户名
+     * @param usernames 用户名集合
      * @return 成功
      */
-    Future<Boolean> deleteUserRelatedCache(String username);
+    Future<Boolean> deleteUserRelatedCache(String... usernames);
+
+    /**
+     * 获取用户信息
+     *
+     * @param userVo 查询条件
+     * @return 用户
+     */
+    Future<UserVo> getUserOne(UserVo userVo);
+
+    /**
+     * 获取用户列表
+     *
+     * @param userVo 查询条件
+     * @return 用户列表
+     */
+    Future<List<UserVo>> getUserList(UserVo userVo);
 
     /**
      * 获取用户分页
      *
-     * @param userVo 用户信息
+     * @param userVo 查询条件
      * @param pageAo 分页信息
      * @return 用户分页
      */

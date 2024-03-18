@@ -10,19 +10,17 @@ import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.platform.system.handler.common.TestHandler;
 import com.zclcs.platform.system.handler.common.VerifyCodeHandler;
+import com.zclcs.platform.system.handler.dept.DeptOptionsHandler;
 import com.zclcs.platform.system.handler.dept.DeptTreeHandler;
+import com.zclcs.platform.system.handler.dict.DictQueryHandler;
 import com.zclcs.platform.system.handler.login.LoginByUsernameHandler;
+import com.zclcs.platform.system.handler.role.RoleOptionsHandler;
 import com.zclcs.platform.system.handler.user.*;
 import com.zclcs.platform.system.security.DefaultStintLogic;
+import com.zclcs.platform.system.security.HasAnyPermissionLogic;
 import com.zclcs.platform.system.security.HasPermissionLogic;
-import com.zclcs.platform.system.service.DeptService;
-import com.zclcs.platform.system.service.DictItemService;
-import com.zclcs.platform.system.service.RoleService;
-import com.zclcs.platform.system.service.UserService;
-import com.zclcs.platform.system.service.impl.DeptServiceImpl;
-import com.zclcs.platform.system.service.impl.DictItemServiceImpl;
-import com.zclcs.platform.system.service.impl.RoleServiceImpl;
-import com.zclcs.platform.system.service.impl.UserServiceImpl;
+import com.zclcs.platform.system.service.*;
+import com.zclcs.platform.system.service.impl.*;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -122,20 +120,40 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         DictItemService dictItemService = new DictItemServiceImpl(pool, redis);
         RoleService roleService = new RoleServiceImpl(pool);
         DeptService deptService = new DeptServiceImpl(pool);
-        UserService userService = new UserServiceImpl(roleService, dictItemService, pool, redis);
+        UserRoleService userRoleService = new UserRoleServiceImpl(pool);
+        UserDataPermissionService userDataPermissionService = new UserDataPermissionServiceImpl(pool);
+        UserService userService = new UserServiceImpl(roleService, userRoleService, userDataPermissionService, dictItemService, pool, redis);
         PermissionProvider hasPermissionLogic = new HasPermissionLogic(userService, "user:view");
-        router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
         VerifyCodeHandler verifyCodeHandler = new VerifyCodeHandler(redis, parser);
-        router.get("/code").handler(verifyCodeHandler.validationHandler).handler(verifyCodeHandler);
-        router.post("/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
-        router.get("/user/permissions").handler(new UserPermissionsHandler(userService));
-        router.get("/user/routers").handler(new UserRoutersHandler(userService));
-        router.get("/user").handler(new UserPageHandler(hasPermissionLogic, userService));
-        router.post("/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
-        router.post("/user/batch").handler(new AddUserBatchHandler(new HasPermissionLogic(userService, "user:add:batch"), userService));
-        router.get("/dept/tree").handler(new DeptTreeHandler(hasPermissionLogic, deptService));
-        router.get("/test").handler(new TestHandler(userService));
-        router.get("/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));
+
+        router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
+
+        router.get("/system/code").handler(verifyCodeHandler.validationHandler).handler(verifyCodeHandler);
+
+        router.post("/system/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
+
+        router.get("/system/user/permissions").handler(new UserPermissionsHandler(userService));
+        router.get("/system/user/routers").handler(new UserRoutersHandler(userService));
+        router.get("/system/user").handler(new UserPageHandler(hasPermissionLogic, userService));
+        router.get("/system/user/list").handler(new UserListHandler(hasPermissionLogic, userService));
+        router.get("/system/user/one").handler(new UserOneHandler(hasPermissionLogic, userService));
+        router.post("/system/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
+        router.put("/system/user").handler(new UpdateUserHandler(new HasPermissionLogic(userService, "user:update"), userService));
+        router.delete("/system/user/:userIds").handler(new DeleteUserHandler(new HasPermissionLogic(userService, "user:delete"), userService));
+        router.get("/system/user/checkUsername").handler(new CheckUsernameHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
+        router.get("/system/user/checkUserMobile").handler(new CheckUserMobileHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
+        router.post("/system/user/batch").handler(new AddUserBatchHandler(new HasPermissionLogic(userService, "user:add:batch"), userService));
+
+        router.get("/system/role/options").handler(new RoleOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "role:view"), roleService));
+
+        router.get("/system/dept/tree").handler(new DeptTreeHandler(hasPermissionLogic, deptService));
+        router.get("/system/dept/options").handler(new DeptOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
+
+        router.get("/system/dict/dictQuery").handler(new DictQueryHandler(dictItemService));
+        router.get("/system/dict/dictTextQuery").handler(new DictQueryHandler(dictItemService));
+
+        router.get("/system/test").handler(new TestHandler(userService));
+        router.get("/system/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));
     }
 
 

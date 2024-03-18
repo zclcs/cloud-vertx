@@ -16,20 +16,20 @@
   "whiteList": [
     {
       "method": "POST",
-      "path": "/login/token/byUsername"
+      "path": "/system/login/token/byUsername"
     },
     {
       "method": "GET",
-      "path": "/code"
+      "path": "/system/code"
     },
     {
       "method": "GET",
-      "path": "/test"
+      "path": "/system/test"
     },
     {
       "ip": "127.0.0.1",
       "method": "GET",
-      "path": "/health"
+      "path": "/system/health"
     }
   ]
 }

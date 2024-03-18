@@ -4,6 +4,7 @@ import com.zclcs.platform.system.dao.entity.Role;
 import com.zclcs.platform.system.dao.entity.RoleRowMapper;
 import com.zclcs.platform.system.service.RoleService;
 import com.zclcs.sql.helper.service.impl.BaseSqlService;
+import com.zclcs.sql.helper.statement.bean.SqlAssist;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.templates.SqlTemplate;
@@ -50,22 +51,7 @@ public class RoleServiceImpl extends BaseSqlService<Role> implements RoleService
 
     @Override
     public Future<List<Role>> getRoleOptions() {
-        return SqlTemplate.forQuery(pool, """
-                        SELECT `role_id`, `role_name`, `role_code`, `remark`, `create_at` 
-                        FROM `system_role` ORDER BY `create_at` DESC
-                        """)
-                .mapTo(RoleRowMapper.INSTANCE)
-                .execute(Collections.emptyMap())
-                .flatMap(rows -> {
-                    List<Role> roles = null;
-                    if (rows != null && rows.size() > 0) {
-                        roles = new ArrayList<>();
-                        for (Role role : rows) {
-                            roles.add(role);
-                        }
-                    }
-                    return Future.succeededFuture(roles);
-                })
+        return this.list(new SqlAssist().setOrders(SqlAssist.order("create_at", false)))
                 ;
     }
 

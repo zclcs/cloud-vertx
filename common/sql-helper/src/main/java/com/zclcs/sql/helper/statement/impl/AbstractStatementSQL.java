@@ -37,6 +37,10 @@ public abstract class AbstractStatementSQL implements SQLStatement {
      */
     private String sqlPrimaryId;
     /**
+     * 主键对应实体类属性名
+     */
+    private String entityFieldNamePrimaryId;
+    /**
      * 返回列
      */
     private String sqlResultColumns;
@@ -65,11 +69,8 @@ public abstract class AbstractStatementSQL implements SQLStatement {
                     if (tableId.name() == null || tableId.name().isEmpty()) {
                         continue;
                     }
-                    if (this.sqlPrimaryId != null) {
-                        this.sqlPrimaryId += tableId.name();
-                    } else {
-                        this.sqlPrimaryId = tableId.name();
-                    }
+                    this.sqlPrimaryId = tableId.name();
+                    this.entityFieldNamePrimaryId = field.getName();
                     hasId = true;
                     column.append(",").append(tableId.name());
                     if (tableId.alias() != null && !tableId.alias().isEmpty()) {
@@ -172,6 +173,18 @@ public abstract class AbstractStatementSQL implements SQLStatement {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public <T> void setPrimaryId(T entity, Object primaryKeyValue) throws Exception {
+        Field[] fields = entity.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (field.getName().equals(entityFieldNamePrimaryId)) {
+                field.set(entity, primaryKeyValue);
+                return;
+            }
+        }
     }
 
     @Override
@@ -898,15 +911,15 @@ public abstract class AbstractStatementSQL implements SQLStatement {
         if (primaryId() == null) {
             return new SqlAndParams(false, "there is no primary key in your SQL statement");
         }
-        StringBuilder sql = new StringBuilder("delete from %s where %s = ");
-        for (int i = 0; i < primaryValues.size(); i++) {
-            if (i == 0) {
-                sql.append("?");
-            } else {
-                sql.append(", ?");
-            }
+        String sql = String.format("delete from %s where %s in ( ", tableName(), primaryId());
+        StringBuilder sb = new StringBuilder(sql);
+        sb.append("?,".repeat(primaryValues.size()));
+        sql = sb.deleteCharAt(sb.length() - 1).append(" )").toString();
+        Tuple params = Tuple.tuple();
+        for (S primaryValue : primaryValues) {
+            params.addValue(primaryValue);
         }
-        SqlAndParams result = new SqlAndParams(sql.toString(), Tuple.of(primaryValues));
+        SqlAndParams result = new SqlAndParams(sql, params);
         if (LOG.isDebugEnabled()) {
             LOG.debug("deleteByIdsSQL : " + result);
         }
