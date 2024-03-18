@@ -5,7 +5,6 @@ import com.zclcs.cloud.lib.web.utils.RoutingContextUtil;
 import com.zclcs.cloud.security.GlobalHandler;
 import com.zclcs.common.core.constant.HttpStatus;
 import com.zclcs.common.redis.starter.rate.limit.impl.DefaultRateLimiterClient;
-import com.zclcs.common.security.provider.PermissionProvider;
 import com.zclcs.common.security.provider.TokenProvider;
 import com.zclcs.common.web.starter.WebStarter;
 import com.zclcs.platform.system.handler.common.TestHandler;
@@ -123,7 +122,6 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         UserRoleService userRoleService = new UserRoleServiceImpl(pool);
         UserDataPermissionService userDataPermissionService = new UserDataPermissionServiceImpl(pool);
         UserService userService = new UserServiceImpl(roleService, userRoleService, userDataPermissionService, dictItemService, pool, redis);
-        PermissionProvider hasPermissionLogic = new HasPermissionLogic(userService, "user:view");
         VerifyCodeHandler verifyCodeHandler = new VerifyCodeHandler(redis, parser);
 
         router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
@@ -134,9 +132,9 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
         router.get("/system/user/permissions").handler(new UserPermissionsHandler(userService));
         router.get("/system/user/routers").handler(new UserRoutersHandler(userService));
-        router.get("/system/user").handler(new UserPageHandler(hasPermissionLogic, userService));
-        router.get("/system/user/list").handler(new UserListHandler(hasPermissionLogic, userService));
-        router.get("/system/user/one").handler(new UserOneHandler(hasPermissionLogic, userService));
+        router.get("/system/user").handler(new UserPageHandler(new HasPermissionLogic(userService, "user:view"), userService));
+        router.get("/system/user/list").handler(new UserListHandler(new HasPermissionLogic(userService, "user:view"), userService));
+        router.get("/system/user/one").handler(new UserOneHandler(new HasPermissionLogic(userService, "user:view"), userService));
         router.post("/system/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
         router.put("/system/user").handler(new UpdateUserHandler(new HasPermissionLogic(userService, "user:update"), userService));
         router.delete("/system/user/:userIds").handler(new DeleteUserHandler(new HasPermissionLogic(userService, "user:delete"), userService));
@@ -146,7 +144,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
 
         router.get("/system/role/options").handler(new RoleOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "role:view"), roleService));
 
-        router.get("/system/dept/tree").handler(new DeptTreeHandler(hasPermissionLogic, deptService));
+        router.get("/system/dept/tree").handler(new DeptTreeHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
         router.get("/system/dept/options").handler(new DeptOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
 
         router.get("/system/dict/dictQuery").handler(new DictQueryHandler(dictItemService));
