@@ -110,12 +110,22 @@ public class PlatformSystemVerticle extends AbstractVerticle {
     }
 
     public void initRoute(Router router) {
-        SchemaParser parser = SchemaParser.createDraft7SchemaParser(
-                SchemaRouter.create(vertx, new SchemaRouterOptions())
-        );
         TokenProvider tokenProvider = new RedisTokenLogic(redis);
         DefaultStintLogic stintProvider = new DefaultStintLogic(config(), redis, pool);
         DefaultRateLimiterClient defaultRateLimiterClient = new DefaultRateLimiterClient(vertx, redis);
+
+        router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
+
+        router.route("/system/*")
+                .subRouter(initSubRouter(tokenProvider));
+    }
+
+    private Router initSubRouter(TokenProvider tokenProvider) {
+        Router router = Router.router(vertx);
+
+        SchemaParser parser = SchemaParser.createDraft7SchemaParser(
+                SchemaRouter.create(vertx, new SchemaRouterOptions())
+        );
         DictItemService dictItemService = new DictItemServiceImpl(pool, redis);
         RoleService roleService = new RoleServiceImpl(pool);
         DeptService deptService = new DeptServiceImpl(pool);
@@ -124,35 +134,34 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         UserService userService = new UserServiceImpl(roleService, userRoleService, userDataPermissionService, dictItemService, pool, redis);
         VerifyCodeHandler verifyCodeHandler = new VerifyCodeHandler(redis, parser);
 
-        router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
+        router.get("/code").handler(verifyCodeHandler.validationHandler).handler(verifyCodeHandler);
 
-        router.get("/system/code").handler(verifyCodeHandler.validationHandler).handler(verifyCodeHandler);
+        router.post("/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
 
-        router.post("/system/login/token/byUsername").handler(new LoginByUsernameHandler(redis, config(), userService, tokenProvider));
+        router.get("/user/permissions").handler(new UserPermissionsHandler(userService));
+        router.get("/user/routers").handler(new UserRoutersHandler(userService));
+        router.get("/user").handler(new UserPageHandler(new HasPermissionLogic(userService, "user:view"), userService));
+        router.get("/user/list").handler(new UserListHandler(new HasPermissionLogic(userService, "user:view"), userService));
+        router.get("/user/one").handler(new UserOneHandler(new HasPermissionLogic(userService, "user:view"), userService));
+        router.post("/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
+        router.put("/user").handler(new UpdateUserHandler(new HasPermissionLogic(userService, "user:update"), userService));
+        router.delete("/user/:userIds").handler(new DeleteUserHandler(new HasPermissionLogic(userService, "user:delete"), userService));
+        router.get("/user/checkUsername").handler(new CheckUsernameHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
+        router.get("/user/checkUserMobile").handler(new CheckUserMobileHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
+        router.post("/user/batch").handler(new AddUserBatchHandler(new HasPermissionLogic(userService, "user:add:batch"), userService));
 
-        router.get("/system/user/permissions").handler(new UserPermissionsHandler(userService));
-        router.get("/system/user/routers").handler(new UserRoutersHandler(userService));
-        router.get("/system/user").handler(new UserPageHandler(new HasPermissionLogic(userService, "user:view"), userService));
-        router.get("/system/user/list").handler(new UserListHandler(new HasPermissionLogic(userService, "user:view"), userService));
-        router.get("/system/user/one").handler(new UserOneHandler(new HasPermissionLogic(userService, "user:view"), userService));
-        router.post("/system/user").handler(new AddUserHandler(new HasPermissionLogic(userService, "user:add"), userService));
-        router.put("/system/user").handler(new UpdateUserHandler(new HasPermissionLogic(userService, "user:update"), userService));
-        router.delete("/system/user/:userIds").handler(new DeleteUserHandler(new HasPermissionLogic(userService, "user:delete"), userService));
-        router.get("/system/user/checkUsername").handler(new CheckUsernameHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
-        router.get("/system/user/checkUserMobile").handler(new CheckUserMobileHandler(new HasAnyPermissionLogic(userService, "user:add", "user:update"), userService));
-        router.post("/system/user/batch").handler(new AddUserBatchHandler(new HasPermissionLogic(userService, "user:add:batch"), userService));
+        router.get("/role/options").handler(new RoleOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "role:view"), roleService));
 
-        router.get("/system/role/options").handler(new RoleOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "role:view"), roleService));
+        router.get("/dept/tree").handler(new DeptTreeHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
+        router.get("/dept/options").handler(new DeptOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
 
-        router.get("/system/dept/tree").handler(new DeptTreeHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
-        router.get("/system/dept/options").handler(new DeptOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
+        router.get("/dict/dictQuery").handler(new DictQueryHandler(dictItemService));
+        router.get("/dict/dictTextQuery").handler(new DictQueryHandler(dictItemService));
 
-        router.get("/system/dict/dictQuery").handler(new DictQueryHandler(dictItemService));
-        router.get("/system/dict/dictTextQuery").handler(new DictQueryHandler(dictItemService));
+        router.get("/test").handler(new TestHandler(userService));
+        router.get("/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));
 
-        router.get("/system/test").handler(new TestHandler(userService));
-        router.get("/system/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));
+        return router;
     }
-
 
 }
