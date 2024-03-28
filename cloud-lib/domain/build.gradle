@@ -1,4 +1,4 @@
 dependencies {
     api(project(":cloud-lib:cloud-core"))
-    api(project(":common:sql-client-templates"))
+    api(project(":common:sql-helper"))
 }

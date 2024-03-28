@@ -74,10 +74,13 @@ public class UserServiceImpl extends BaseSqlService<User> implements UserService
     @Override
     public Future<UserCacheVo> getUserInfo(RoutingContext ctx) {
         String loginId = ctx.get(SecurityContext.LOGIN_ID);
-        LoginType loginType = ctx.get(SecurityContext.LOGIN_TYPE, LoginType.username);
+        LoginType loginType = ctx.get(SecurityContext.LOGIN_TYPE);
+        if (StringsUtil.isBlank(loginId) || loginType == null) {
+            return Future.failedFuture("登录信息不存在");
+        }
         return switch (loginType) {
+            case username -> getUserCacheByName(loginId);
             case mobile -> getUserCacheByMobile(loginId);
-            default -> getUserCacheByName(loginId);
         };
     }
 

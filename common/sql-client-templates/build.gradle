@@ -1,4 +1,0 @@
-dependencies {
-    api(project(":common:core"))
-    api("io.vertx:vertx-sql-client-templates")
-}

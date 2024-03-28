@@ -7,12 +7,9 @@ import com.zclcs.sql.helper.service.impl.BaseSqlService;
 import com.zclcs.sql.helper.statement.bean.SqlAssist;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.Pool;
-import io.vertx.sqlclient.templates.SqlTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,22 +28,7 @@ public class RoleServiceImpl extends BaseSqlService<Role> implements RoleService
 
     @Override
     public Future<List<Role>> getRolesByUserId(Long userId) {
-        return SqlTemplate.forQuery(pool, """
-                        SELECT * FROM role WHERE user_id = #{userId}
-                        """)
-                .mapTo(RoleRowMapper.INSTANCE)
-                .execute(Collections.singletonMap("userId", userId))
-                .flatMap(rows -> {
-                    List<Role> roles = null;
-                    if (rows != null && rows.size() > 0) {
-                        roles = new ArrayList<>();
-                        for (Role role : rows) {
-                            roles.add(role);
-                        }
-                    }
-                    return Future.succeededFuture(roles);
-                })
-                ;
+        return this.list(new SqlAssist().andEq("user_id", userId));
     }
 
     @Override

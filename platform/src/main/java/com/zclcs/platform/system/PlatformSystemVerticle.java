@@ -12,6 +12,7 @@ import com.zclcs.platform.system.handler.common.VerifyCodeHandler;
 import com.zclcs.platform.system.handler.dept.DeptOptionsHandler;
 import com.zclcs.platform.system.handler.dept.DeptTreeHandler;
 import com.zclcs.platform.system.handler.dict.DictQueryHandler;
+import com.zclcs.platform.system.handler.dict.DictTextQueryHandler;
 import com.zclcs.platform.system.handler.login.LoginByUsernameHandler;
 import com.zclcs.platform.system.handler.role.RoleOptionsHandler;
 import com.zclcs.platform.system.handler.user.*;
@@ -117,10 +118,10 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         router.route("/*").handler(new GlobalHandler(tokenProvider, defaultRateLimiterClient, stintProvider));
 
         router.route("/system/*")
-                .subRouter(initSubRouter(tokenProvider));
+                .subRouter(initSubRouterSystem(tokenProvider));
     }
 
-    private Router initSubRouter(TokenProvider tokenProvider) {
+    private Router initSubRouterSystem(TokenProvider tokenProvider) {
         Router router = Router.router(vertx);
 
         SchemaParser parser = SchemaParser.createDraft7SchemaParser(
@@ -156,7 +157,7 @@ public class PlatformSystemVerticle extends AbstractVerticle {
         router.get("/dept/options").handler(new DeptOptionsHandler(new HasAnyPermissionLogic(userService, "user:view", "dept:view"), deptService));
 
         router.get("/dict/dictQuery").handler(new DictQueryHandler(dictItemService));
-        router.get("/dict/dictTextQuery").handler(new DictQueryHandler(dictItemService));
+        router.get("/dict/dictTextQuery").handler(new DictTextQueryHandler(dictItemService));
 
         router.get("/test").handler(new TestHandler(userService));
         router.get("/health").handler(ctx -> RoutingContextUtil.success(ctx, "ok"));

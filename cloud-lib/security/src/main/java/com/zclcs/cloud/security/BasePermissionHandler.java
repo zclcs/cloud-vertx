@@ -23,7 +23,7 @@ public abstract class BasePermissionHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext ctx) {
         String loginId = ctx.get(SecurityContext.LOGIN_ID);
-        LoginType loginType = ctx.get(SecurityContext.LOGIN_TYPE, LoginType.username);
+        LoginType loginType = ctx.get(SecurityContext.LOGIN_TYPE);
         if (loginId == null || loginType == null) {
             RoutingContextUtil.error(ctx, HttpStatus.HTTP_FAILED_DEPENDENCY, "未登录");
         } else {

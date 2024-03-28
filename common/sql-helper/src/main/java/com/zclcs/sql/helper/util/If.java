@@ -5,6 +5,9 @@ import com.zclcs.common.core.utils.StringsUtil;
 import java.util.Collection;
 import java.util.Map;
 
+/**
+ * @author zclcs
+ */
 public class If {
 
     private If() {

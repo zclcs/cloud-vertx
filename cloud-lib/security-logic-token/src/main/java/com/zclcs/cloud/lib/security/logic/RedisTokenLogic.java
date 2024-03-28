@@ -43,13 +43,14 @@ public class RedisTokenLogic implements TokenProvider {
         String k = String.format(RedisPrefix.TOKEN_PREFIX, token);
         String expireTime = String.valueOf(redisTokenExpire.getSeconds() + new Random().nextLong(100) + 1L);
         TokenInfo tokenInfoValue = new TokenInfo(loginId, loginType, loginDevice);
-        return redis.set(Arrays.asList(k, JsonUtil.toJson(tokenInfoValue), "EX", expireTime)).compose(rv -> {
-            if (rv != null) {
-                return Future.succeededFuture(token);
-            } else {
-                return Future.failedFuture("token生成失败");
-            }
-        });
+        return redis.set(Arrays.asList(k, JsonUtil.toJson(tokenInfoValue), "EX", expireTime))
+                .compose(rv -> {
+                    if (rv != null) {
+                        return Future.succeededFuture(token);
+                    } else {
+                        return Future.failedFuture("token生成失败");
+                    }
+                });
     }
 
     @Override

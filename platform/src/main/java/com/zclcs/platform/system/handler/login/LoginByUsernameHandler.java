@@ -7,6 +7,7 @@ import com.zclcs.common.core.utils.AESUtil;
 import com.zclcs.common.security.constant.LoginDevice;
 import com.zclcs.common.security.constant.LoginType;
 import com.zclcs.common.security.provider.TokenProvider;
+import com.zclcs.platform.system.constant.SystemUserStatus;
 import com.zclcs.platform.system.dao.vo.LoginVo;
 import com.zclcs.platform.system.dao.vo.UserTokenVo;
 import com.zclcs.platform.system.service.UserService;
@@ -95,16 +96,18 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
         userService.getUserCacheByName(username)
                 .onComplete(user -> {
                     if (user != null) {
-                        if ("0".equals(user.getStatus())) {
+                        if (SystemUserStatus.USER_STATUS_LOCK.equals(user.getStatus())) {
                             RoutingContextUtil.error(ctx, "用户被禁用");
                             return;
                         }
                         try {
                             String passwordPlainText;
                             if (decodePassword) {
-                                passwordPlainText = new String(AESUtil.decryptCFB(Base64.getDecoder().decode(password),
-                                        decodePasswordKey.getBytes(StandardCharsets.UTF_8),
-                                        decodePasswordKey.getBytes(StandardCharsets.UTF_8))
+                                passwordPlainText = new String(
+                                        AESUtil.decryptCFB(Base64.getDecoder().decode(password),
+                                                decodePasswordKey.getBytes(StandardCharsets.UTF_8),
+                                                decodePasswordKey.getBytes(StandardCharsets.UTF_8)
+                                        )
                                 );
                             } else {
                                 passwordPlainText = password;
@@ -115,7 +118,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
                                         .onComplete(r -> {
                                             RoutingContextUtil.success(ctx, new UserTokenVo(r, tokenProvider.getRedisTokenExpire().getSeconds(), new LoginVo(user)));
                                         }, e -> {
-                                            log.error("message {}", e.getMessage(), e);
+                                            log.error("token生成失败 {}", e.getMessage(), e);
                                             RoutingContextUtil.error(ctx, "token生成失败");
                                         });
                             } else {
@@ -131,7 +134,7 @@ public class LoginByUsernameHandler implements Handler<RoutingContext> {
                         RoutingContextUtil.error(ctx, "用户名或密码错误");
                     }
                 }, e -> {
-                    log.error("message {}", e.getMessage(), e);
+                    log.error("无法获取用户信息 {}", e.getMessage(), e);
                     RoutingContextUtil.error(ctx, "无法获取用户信息");
                 })
         ;

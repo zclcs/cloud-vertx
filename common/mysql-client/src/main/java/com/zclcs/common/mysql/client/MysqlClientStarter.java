@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -92,12 +91,13 @@ public class MysqlClientStarter {
         for (String dir : dirs) {
             if (dir.endsWith(".sql")) {
                 String statements = vertx.fileSystem().readFileBlocking(dir).toString();
-                List<String> statement = Arrays.stream(statements.split(";"))
-                        .filter(StringsUtil::isNotBlank)
-                        .toList();
-                for (String sql : statement) {
-                    futures.add(sqlConnection.query(sql).execute());
-                }
+                futures.add(sqlConnection.query(statements).execute());
+//                List<String> statement = Arrays.stream(statements.split(";"))
+//                        .filter(StringsUtil::isNotBlank)
+//                        .toList();
+//                for (String sql : statement) {
+//                    futures.add(sqlConnection.query(sql).execute());
+//                }
             }
         }
         return Future.all(futures).eventually(() -> sqlConnection.close());
